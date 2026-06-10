@@ -71,9 +71,32 @@ async function main(): Promise<void> {
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
-    create: { email: adminEmail, passwordHash, displayName: 'Garden Owner', role: 'owner' },
+    create: {
+      email: adminEmail,
+      passwordHash,
+      displayName: 'Garden Owner',
+      role: 'owner',
+      // Demo location & hardiness zone (Phase 1).
+      zipCode: '30301',
+      hardinessZone: '8a',
+      latitude: 33.749,
+      longitude: -84.388,
+    },
   });
   console.log(`Seeded admin user: ${admin.email}`);
+
+  // Pre-warm the zone cache so the demo ZIP resolves without the external API.
+  await prisma.zoneLookupCache.upsert({
+    where: { zip: '30301' },
+    update: {},
+    create: {
+      zip: '30301',
+      hardinessZone: '8a',
+      latitude: 33.749,
+      longitude: -84.388,
+      temperatureRange: '10 to 15',
+    },
+  });
 
   // --- Families -----------------------------------------------------------
   const familyBySlug = new Map<string, string>();

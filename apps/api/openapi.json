@@ -407,6 +407,366 @@
         }
       }
     },
+    "/api/zone/lookup": {
+      "get": {
+        "summary": "Look up the USDA hardiness zone for a ZIP (cached, degrades gracefully)",
+        "tags": [
+          "zone"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 5,
+              "maxLength": 10,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "zip",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "zip",
+                    "hardinessZone",
+                    "latitude",
+                    "longitude",
+                    "temperatureRange",
+                    "source"
+                  ],
+                  "properties": {
+                    "zip": {
+                      "type": "string"
+                    },
+                    "hardinessZone": {
+                      "type": "string"
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "temperatureRange": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "api"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cache"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "stale-cache"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/zone/": {
+      "get": {
+        "summary": "Get the account's saved location & hardiness zone",
+        "tags": [
+          "zone"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "zipCode",
+                    "hardinessZone",
+                    "zoneIsManual",
+                    "latitude",
+                    "longitude"
+                  ],
+                  "properties": {
+                    "zipCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "hardinessZone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "zoneIsManual": {
+                      "type": "boolean"
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Set the account's zone — by ZIP (auto lookup) or manual override",
+        "tags": [
+          "zone"
+        ],
+        "description": "Provide `hardinessZone` to set a manual override, or `zip` to derive the zone from a lookup. Manual values are never overwritten by a later ZIP change unless you send a new zip without a zone.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "zip": {
+                    "minLength": 5,
+                    "maxLength": 10,
+                    "type": "string"
+                  },
+                  "hardinessZone": {
+                    "minLength": 1,
+                    "maxLength": 8,
+                    "type": "string"
+                  },
+                  "latitude": {
+                    "minimum": -90,
+                    "maximum": 90,
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "minimum": -180,
+                    "maximum": 180,
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "zipCode",
+                    "hardinessZone",
+                    "zoneIsManual",
+                    "latitude",
+                    "longitude"
+                  ],
+                  "properties": {
+                    "zipCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "hardinessZone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "zoneIsManual": {
+                      "type": "boolean"
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/gardens/": {
       "get": {
         "summary": "List the current user’s gardens",
@@ -5940,6 +6300,10 @@
     {
       "name": "auth",
       "description": "Authentication & the current user"
+    },
+    {
+      "name": "zone",
+      "description": "Location & USDA hardiness zone"
     },
     {
       "name": "gardens",

@@ -58,6 +58,23 @@ export interface Garden {
   hardinessZone: string | null;
 }
 
+export interface AccountLocation {
+  zipCode: string | null;
+  hardinessZone: string | null;
+  zoneIsManual: boolean;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface ZoneLookup {
+  zip: string;
+  hardinessZone: string;
+  latitude: number | null;
+  longitude: number | null;
+  temperatureRange: string | null;
+  source: 'api' | 'cache' | 'stale-cache';
+}
+
 export const api = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {
@@ -78,5 +95,17 @@ export const api = {
   },
   createGarden(input: { name: string; description?: string; hardinessZone?: string }) {
     return request<Garden>('/api/gardens', { method: 'POST', body: JSON.stringify(input) });
+  },
+  getZone() {
+    return request<AccountLocation>('/api/zone');
+  },
+  lookupZone(zip: string) {
+    return request<ZoneLookup>(`/api/zone/lookup?zip=${encodeURIComponent(zip)}`);
+  },
+  setZone(input: { zip?: string; hardinessZone?: string }) {
+    return request<AccountLocation>('/api/zone', {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
   },
 };
