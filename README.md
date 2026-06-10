@@ -101,17 +101,21 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md) for setup and the chosen stack.
 
 ### Phase 2 — Plant Directory
 The knowledge base that powers planning.
-- [ ] Catalog of plants (vegetables and flowers) with:
-  - [ ] **Plant family** association (drives rotation/disease rules).
-  - [ ] Planting and harvest windows by hardiness zone (**overridable**).
-  - [ ] Companion plants and plants to keep apart (e.g. peppers and jalapeños
+- [x] Catalog of plants (vegetables and flowers) with:
+  - [x] **Plant family** association (drives rotation/disease rules).
+  - [x] Planting and harvest windows by hardiness zone (**overridable**).
+        _`PlantingWindow` model (month ranges, wrap-around); user overrides via
+        `ownerId`. Effective-window/suitability logic is unit-tested._
+  - [x] Companion plants and plants to keep apart (e.g. peppers and jalapeños
         cross-pollinating).
-  - [ ] Preferred soil type, sun, water, and spacing needs.
-  - [ ] Common pests and diseases (e.g. tomato hornworms).
-  - [ ] Common mistakes and growing tips.
-  - [ ] **Source/attribution** for each entry so reliability is judgeable.
-- [ ] Search and filter (by zone suitability, type, season, companions).
-- [ ] Seed the directory with an initial curated dataset.
+  - [x] Preferred soil type, sun, water, and spacing needs.
+  - [x] Common pests and diseases (e.g. tomato hornworms). _`PlantIssue` model._
+  - [x] Common mistakes and growing tips.
+  - [x] **Source/attribution** for each entry so reliability is judgeable.
+- [x] Search and filter (by zone suitability, type, season, companions).
+      _`GET /api/plants?q&type&familyId&zone&month&companionOf`._
+- [x] Seed the directory with an initial curated dataset.
+      _12 plants, families, companions, zone 7b/8a windows, pests/diseases._
 
 ### Phase 3 — Garden & Bed Management
 - [ ] Create gardens and define how much growing space is available.

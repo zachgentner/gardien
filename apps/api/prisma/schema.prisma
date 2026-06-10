@@ -155,6 +155,9 @@ model Plant {
   companionsFrom CompanionLink[] @relation("CompanionFrom")
   companionsTo   CompanionLink[] @relation("CompanionTo")
 
+  windows PlantingWindow[]
+  issues  PlantIssue[]
+
   plantings PlantingRecord[]
 
   createdAt DateTime  @default(now())
@@ -163,6 +166,65 @@ model Plant {
 
   @@index([type])
   @@index([familyId])
+  @@index([deletedAt])
+}
+
+enum PlantIssueKind {
+  pest
+  disease
+}
+
+/// A pest or disease commonly affecting a plant (Phase 2 knowledge base).
+model PlantIssue {
+  id          String         @id @default(cuid())
+  kind        PlantIssueKind
+  name        String
+  description String?
+  management  String?
+  source      String?
+
+  plantId String
+  plant   Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  // Custom user entry when set; null = curated/global.
+  ownerId String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([plantId])
+  @@index([deletedAt])
+}
+
+/// Planting & harvest windows for a plant in a given USDA zone, as month
+/// ranges (1-12, inclusive, wrap-around allowed e.g. Nov->Feb). Overridable:
+/// a row with `ownerId` set is the user's override of the curated window
+/// (ownerId null) for that plant+zone.
+model PlantingWindow {
+  id   String @id @default(cuid())
+  zone String
+
+  plantStartMonth Int
+  plantEndMonth   Int
+  harvestStartMonth Int?
+  harvestEndMonth   Int?
+
+  source String?
+  notes  String?
+
+  plantId String
+  plant   Plant  @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  ownerId String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([plantId, zone, ownerId])
+  @@index([plantId])
+  @@index([zone])
   @@index([deletedAt])
 }
 

@@ -29,6 +29,9 @@ jobs:
       DATABASE_URL: postgresql://gardien:gardien@localhost:5432/gardien_test?schema=public
       JWT_SECRET: ci-test-secret
       NODE_ENV: test
+      # Run JS-based actions on Node 24 ahead of GitHub's forced switch
+      # (actions/checkout & setup-node ship on the deprecated Node 20 otherwise).
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
       - uses: actions/checkout@v4
