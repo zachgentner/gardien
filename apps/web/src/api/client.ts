@@ -126,6 +126,33 @@ export interface Season {
   notes: string | null;
 }
 
+/** A planting record as returned by the list endpoint (no embedded plant). */
+export interface Planting {
+  id: string;
+  quantity: number;
+  status: PlantingStatus;
+  plannedPlantDate: string | null;
+  plannedHarvestDate: string | null;
+  plantedOn: string | null;
+  harvestedOn: string | null;
+  notes: string | null;
+  bedId: string;
+  plantId: string;
+  seasonId: string;
+}
+
+/** A soil amendment as returned by the list endpoint. */
+export interface Amendment {
+  id: string;
+  name: string;
+  appliedOn: string;
+  amount: number | null;
+  amountUnit: string | null;
+  notes: string | null;
+  bedId: string;
+  seasonId: string | null;
+}
+
 export interface GardenInput {
   name: string;
   description?: string;
@@ -279,6 +306,20 @@ export const api = {
   },
   listSeasons() {
     return request<Season[]>('/api/seasons');
+  },
+  listPlantings(params: { bedId?: string; seasonId?: string } = {}) {
+    const qs = new URLSearchParams();
+    if (params.bedId) qs.set('bedId', params.bedId);
+    if (params.seasonId) qs.set('seasonId', params.seasonId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Planting[]>(`/api/plantings${suffix}`);
+  },
+  listAmendments(params: { bedId?: string; seasonId?: string } = {}) {
+    const qs = new URLSearchParams();
+    if (params.bedId) qs.set('bedId', params.bedId);
+    if (params.seasonId) qs.set('seasonId', params.seasonId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Amendment[]>(`/api/amendments${suffix}`);
   },
   getZone() {
     return request<AccountLocation>('/api/zone');

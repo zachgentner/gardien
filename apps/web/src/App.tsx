@@ -2,9 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@gardien/shared';
 import { api, ApiRequestError, getToken } from './api/client';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
-import { LocationZone } from './components/LocationZone';
-import { PlantDirectory } from './components/PlantDirectory';
+import { useHashRoute } from './hooks/useHashRoute';
+import { Sidebar } from './components/Sidebar';
+import { ShieldMark } from './components/ShieldMark';
+import { SECTIONS, type ViewId } from './components/sections';
+import { Home } from './components/Home';
 import { GardenManager } from './components/GardenManager';
+import { GardenPlanner } from './components/GardenPlanner';
+import { PlantDirectory } from './components/PlantDirectory';
+import { ActivityLog } from './components/ActivityLog';
+import { Settings } from './components/Settings';
+
+const ROUTES = SECTIONS.map((s) => s.id);
 
 export default function App() {
   const online = useOnlineStatus();
@@ -24,34 +33,105 @@ export default function App() {
       .finally(() => setChecking(false));
   }, []);
 
+  if (checking) {
+    return (
+      <div className="boot">
+        <p>Loading…</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen online={online} onAuthenticated={setUser} />;
+  }
+
+  return <AppShell user={user} online={online} onLogout={() => setUser(null)} />;
+}
+
+/** Signed-in layout: a persistent left nav and the active feature area. */
+function AppShell({
+  user,
+  online,
+  onLogout,
+}: {
+  user: AuthUser;
+  online: boolean;
+  onLogout: () => void;
+}) {
+  const [view, setView] = useHashRoute<ViewId>(ROUTES, 'home');
+  const active = SECTIONS.find((s) => s.id === view) ?? SECTIONS[0]!;
+
+  const signOut = useCallback(() => {
+    api.logout();
+    onLogout();
+  }, [onLogout]);
+
+  return (
+    <div className="shell">
+      <Sidebar active={view} onNavigate={setView} user={user} onLogout={signOut} />
+
+      <div className="workspace">
+        <header className="workspace__bar">
+          <div className="workspace__heading">
+            <span className="workspace__eyebrow">{active.eyebrow}</span>
+            <h1 className="workspace__title">{active.label}</h1>
+          </div>
+          <p
+            className={`app__status ${online ? 'is-online' : 'is-offline'}`}
+            role="status"
+            aria-live="polite"
+          >
+            {online ? 'Online' : 'Offline — syncs when reconnected'}
+          </p>
+        </header>
+
+        <main className="workspace__main" id="main" tabIndex={-1} key={view}>
+          {view === 'home' && <Home user={user} />}
+          {view === 'garden' && <GardenManager unitSystem={user.unitSystem} />}
+          {view === 'planner' && <GardenPlanner />}
+          {view === 'directory' && <PlantDirectory />}
+          {view === 'journal' && <ActivityLog />}
+          {view === 'settings' && <Settings user={user} />}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+/** Signed-out layout: masthead + centered sign-in. */
+function AuthScreen({
+  online,
+  onAuthenticated,
+}: {
+  online: boolean;
+  onAuthenticated: (user: AuthUser) => void;
+}) {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">
-          <span aria-hidden="true">🌱</span> Gardien
-        </h1>
+        <div className="app__masthead">
+          <span className="app__eyebrow">The garden almanac</span>
+          <h1 className="app__title">
+            <ShieldMark />
+            Gardien
+          </h1>
+        </div>
         <p
           className={`app__status ${online ? 'is-online' : 'is-offline'}`}
           role="status"
           aria-live="polite"
         >
-          {online ? 'Online' : 'Offline — changes will sync when reconnected'}
+          {online ? 'Online' : 'Offline — syncs when reconnected'}
         </p>
       </header>
 
       <main className="app__main">
-        {checking ? (
-          <p>Loading…</p>
-        ) : user ? (
-          <Dashboard user={user} onLogout={() => setUser(null)} />
-        ) : (
-          <LoginForm onAuthenticated={setUser} />
-        )}
+        <LoginForm onAuthenticated={onAuthenticated} />
       </main>
 
       <footer className="app__footer">
         <p>
-          Phase 0 foundation. API docs at{' '}
+          Field notes for your garden · API reference at{' '}
           <a href="/docs" rel="noreferrer">
             /docs
           </a>
@@ -86,7 +166,8 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
   );
 
   return (
-    <section aria-labelledby="login-heading" className="card">
+    <section aria-labelledby="login-heading" className="card card--auth">
+      <p className="auth-eyebrow">Welcome back</p>
       <h2 id="login-heading">Sign in</h2>
       <form onSubmit={onSubmit} className="form">
         <div className="form__row">
@@ -121,31 +202,5 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
         </button>
       </form>
     </section>
-  );
-}
-
-function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
-  return (
-    <div className="stack">
-      <section aria-labelledby="dash-heading" className="card">
-        <div className="card__header">
-          <h2 id="dash-heading">Welcome, {user.displayName ?? user.email}</h2>
-          <button
-            type="button"
-            className="button--ghost"
-            onClick={() => {
-              api.logout();
-              onLogout();
-            }}
-          >
-            Sign out
-          </button>
-        </div>
-      </section>
-
-      <GardenManager unitSystem={user.unitSystem} />
-      <LocationZone />
-      <PlantDirectory />
-    </div>
   );
 }
