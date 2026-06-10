@@ -66,19 +66,27 @@ Robustness work is folded into the phase it belongs to.
 
 ### Phase 0 — Foundation
 Get a deployable, single-user PWA skeleton in place.
-- [ ] Choose and scaffold the web stack (frontend, backend/API, database).
-- [ ] **API-first**: define and document the API contract before building UI.
-- [ ] **PWA shell**: installable app, service worker, offline caching strategy.
-- [ ] Define the core data model: users, gardens, beds, plants, plant families,
-      seasons, planting records, soil amendments.
-- [ ] Bake in **explicit units**, **soft deletes/archiving**, and
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for setup and the chosen stack.
+- [x] Choose and scaffold the web stack (frontend, backend/API, database).
+      _npm-workspaces monorepo: Fastify + Prisma + Postgres API, React + Vite PWA._
+- [x] **API-first**: define and document the API contract before building UI.
+      _OpenAPI generated from route schemas, served at `/docs`, committed at
+      `apps/api/openapi.json` (CI enforces it stays current)._
+- [x] **PWA shell**: installable app, service worker, offline caching strategy.
+      _`vite-plugin-pwa`: precached app shell + network-first API caching._
+- [x] Define the core data model: users, gardens, beds, plants, plant families,
+      seasons, planting records, soil amendments. _Prisma schema._
+- [x] Bake in **explicit units**, **soft deletes/archiving**, and
       **seasons as first-class entities** at the schema level.
-- [ ] Authentication scaffolding — single-user now, but structured so multi-user
+- [x] Authentication scaffolding — single-user now, but structured so multi-user
       can be enabled later (see Phase 8) rather than retrofitted.
-- [ ] CI pipeline with **automated tests** wired up from the first commit.
-- [ ] **Seed/fixture data** for local development and demos.
-- [ ] **Automated database backups** and environment config (dev/prod).
-- [ ] Establish accessibility/responsive baseline (linting, component patterns).
+- [x] CI pipeline with **automated tests** wired up from the first commit.
+      _GitHub Actions: lint, typecheck, rotation/companion tests, build._
+- [x] **Seed/fixture data** for local development and demos.
+- [x] **Automated database backups** and environment config (dev/prod).
+      _Nightly `pg_dump` backup service + `.env`-driven config._
+- [x] Establish accessibility/responsive baseline (linting, component patterns).
+      _`jsx-a11y` lint rules + accessible, responsive base styles._
 
 ### Phase 1 — Location & Hardiness Zone
 - [ ] Enter a ZIP code to look up the USDA hardiness zone.
@@ -174,5 +182,10 @@ Sensor metrics the IoT layer will collect:
 
 ## Status
 
-Early planning. The current focus is Phases 0–5 (planning, management, and the
-plant directory) as a single-user PWA.
+**Phase 0 (Foundation) is in place** — a deployable single-user PWA skeleton:
+monorepo, documented API contract, PWA shell, full core data model, auth
+scaffolding, CI with tests, seed data, backups, and an accessibility baseline.
+See [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
+
+The current focus is Phases 1–5 (location/zone, plant directory, garden &
+bed management, planning, and history/recommendations) as a single-user PWA.
