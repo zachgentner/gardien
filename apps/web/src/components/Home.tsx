@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@gardien/shared';
 import { api, ApiRequestError, type Season } from '../api/client';
 import { buildActivity, formatActivityDate, type Activity } from '../activity';
+import { WeatherPanel } from './WeatherPanel';
 
 interface Notice {
   id: string;
@@ -149,16 +150,7 @@ export function Home({ user }: { user: AuthUser }) {
         )}
       </section>
 
-      <section aria-labelledby="weather-heading" className="card">
-        <h3 id="weather-heading">Weather &amp; frost</h3>
-        <div className="placeholder placeholder--inline">
-          <p className="muted">
-            Localized forecasts, frost warnings tied to your plantings, and pest/disease
-            alerts arrive in a later phase — they'll surface here, right where you start
-            your day.
-          </p>
-        </div>
-      </section>
+      <WeatherPanel unitSystem={user.unitSystem} />
 
       <section aria-labelledby="recent-heading" className="card">
         <div className="card__header">

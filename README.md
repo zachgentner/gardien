@@ -172,10 +172,17 @@ The knowledge base that powers planning.
 
 ### Phase 6 — Weather-Driven Alerts
 Builds on the location data from Phase 1.
-- [ ] Pull localized weather forecasts (**cached, degrade gracefully**).
-- [ ] Frost warnings based on forecast and your plantings.
-- [ ] Location-based pest and disease alerts.
+- [x] Pull localized weather forecasts (**cached, degrade gracefully**).
+      _`GET /api/weather` via Open-Meteo (no API key); `WeatherCache` with a 3h
+      freshness window and stale-cache fallback when upstream is down._
+- [x] Frost warnings based on forecast and your plantings.
+      _`domain/frost.ts` classifies hard/light frost from daily minima; shown as
+      a dashboard banner with affected days highlighted._
+- [x] Location-based pest and disease alerts.
+      _A "Watch for" list built from the pests/diseases of what you're currently
+      growing._
 - [ ] Notification delivery with an **email fallback** where PWA push is limited.
+      _Deferred follow-up; alerts surface in-app on the Home dashboard for now._
 
 ### Phase 7 — Hardware Integration (IoT Controller & Data Gathering)
 The ESP32 monitoring and irrigation layer.
@@ -219,15 +226,17 @@ Sensor metrics the IoT layer will collect:
 
 ## Status
 
-**Phases 0–4 are in place.** Phase 0 laid a deployable single-user PWA skeleton
+**Phases 0–6 are in place.** Phase 0 laid a deployable single-user PWA skeleton
 (monorepo, documented API contract, PWA shell, full core data model, auth
 scaffolding, CI with tests, seed data, backups, accessibility baseline). Phase 1
 added location & USDA hardiness zone; Phase 2 the plant directory; Phase 3
 garden & bed management; Phase 4 garden planning — a calendar-centric planner
-that assigns plants to beds for a season and runs plan-time conflict detection
-(incompatible neighbors, rotation, overcrowding, zone suitability) with a
-12-month planting/harvest calendar. The app shell is a left-sidebar layout
+with plan-time conflict detection; Phase 5 history & recommendations — per-bed
+plant recommendations from rotation history, amendment logging, and JSON export;
+Phase 6 weather-driven alerts — a localized forecast with frost warnings and a
+pest/disease watch on the dashboard. The app shell is a left-sidebar layout
 (Home, Garden Manager, Garden Planner, Plant Directory, Journal, Settings). See
 [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
 
-The next focus is Phase 5 (history & recommendations), still as a single-user PWA.
+Remaining: Phase 5 data import and Phase 6 push/email notifications (deferred
+follow-ups), then Phase 7 (hardware/IoT) and Phase 8 (multi-tenant SaaS).
