@@ -57,6 +57,7 @@ model User {
   seasons   Season[]
   plants    Plant[]
   families  PlantFamily[]
+  devices   Device[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -297,6 +298,7 @@ model Bed {
 
   plantings  PlantingRecord[]
   amendments SoilAmendment[]
+  devices    Device[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -434,4 +436,65 @@ model WeatherCache {
   days      Json
   source    String   @default("open-meteo")
   fetchedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Hardware / IoT (Phase 7)
+// ---------------------------------------------------------------------------
+
+enum SensorMetric {
+  air_temp
+  humidity
+  soil_moisture
+  water_level
+  light
+}
+
+/// An ESP32 (or similar) controller that reports sensor readings and may drive
+/// irrigation for a bed. Authenticates with a per-device token (only its hash
+/// is stored, like a password) so devices never share a key.
+model Device {
+  id        String  @id @default(cuid())
+  name      String
+  tokenHash String
+
+  // Optional bed this device monitors / irrigates.
+  bedId String?
+  bed   Bed?    @relation(fields: [bedId], references: [id])
+
+  // Health / calibration tracking.
+  batteryPct      Float?
+  firmwareVersion String?
+  lastSeenAt      DateTime?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  readings SensorReading[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([ownerId])
+  @@index([bedId])
+  @@index([deletedAt])
+}
+
+/// A single sensor sample. `recordedAt` is when the device measured it (which
+/// may be earlier than receipt, since devices buffer offline and sync later);
+/// the unique key makes re-syncing buffered readings idempotent.
+model SensorReading {
+  id         String       @id @default(cuid())
+  metric     SensorMetric
+  value      Float
+  unit       String
+  recordedAt DateTime
+  createdAt  DateTime     @default(now())
+
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, metric, recordedAt])
+  @@index([deviceId, metric, recordedAt])
 }
