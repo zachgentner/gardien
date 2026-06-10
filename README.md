@@ -134,12 +134,22 @@ The knowledge base that powers planning.
       archived rows unless `includeArchived` is passed._
 
 ### Phase 4 — Garden Planning
-- [ ] Plan a season: assign plants to beds based on available space.
-- [ ] **Conflict detection at plan time** — warn on incompatible neighbors,
+- [x] Plan a season: assign plants to beds based on available space.
+      _Planner assigns planned `PlantingRecord`s to a (bed, season); a season is
+      the container and months are the resolution._
+- [x] **Conflict detection at plan time** — warn on incompatible neighbors,
       overcrowding, or rotation violations *before* planting.
-- [ ] Generate a planting/harvest calendar from zone-based windows.
-- [ ] Track plan vs. actual (what you intended vs. what got planted).
-- [ ] **Tests** covering the companion/spacing/conflict rules.
+      _`GET /api/beds/:id/plan?seasonId=` composes companion, rotation, spacing,
+      and zone-suitability rules into a single report with a `warningCount`._
+- [x] Generate a planting/harvest calendar from zone-based windows.
+      _The planner renders a 12-month calendar; plant/harvest bars come from each
+      plant's effective zone window (override beats curated)._
+- [x] Track plan vs. actual (what you intended vs. what got planted).
+      _Plantings carry planned vs. actual dates and advance planned → planted →
+      harvested from the planner._
+- [x] **Tests** covering the companion/spacing/conflict rules.
+      _`spacing.test.ts` (capacity) joins the existing companion/rotation/window
+      tests — 59 in total._
 
 ### Phase 5 — History & Recommendations
 - [ ] Record what was planted in each bed each season.

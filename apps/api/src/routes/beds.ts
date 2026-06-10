@@ -1,4 +1,4 @@
-import { Type } from '@sinclair/typebox';
+import { Type, type Static } from '@sinclair/typebox';
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { IdParam, Timestamps, NullableDateTime, DateTime, errorResponses } from '../schemas/common.js';
 import { deriveAreaSqM, partitionPlantings, type PlantingStatus } from '../domain/bed.js';

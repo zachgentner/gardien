@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Gardien">
-  <rect width="512" height="512" rx="96" fill="#2e7d32" />
-  <path
-    d="M256 96c-88 0-160 64-160 160 0 64 40 112 96 136 8-72 48-128 112-160-56 40-88 96-96 160 88 0 160-72 160-160C368 144 320 96 256 96z"
-    fill="#ffffff"
-  />
-  <path d="M256 392c0-72 24-128 64-168" stroke="#2e7d32" stroke-width="14" fill="none" stroke-linecap="round" />
+  <rect width="512" height="512" rx="110" fill="#2e7d32" />
+  <path d="M256 64 424 122v130c0 114-82 188-168 220-86-32-168-106-168-220V122L256 64Z" fill="#f4f7f4" />
+  <g transform="translate(47 57) scale(18)" fill="#2e7d32">
+    <path d="M12 17.4v-4.6" stroke="#2e7d32" stroke-width="1.4" stroke-linecap="round" />
+    <path d="M12 13C11 10.3 8.8 9.1 6.1 9.5c.2 2.8 2.3 4.3 5.9 3.5Z" />
+    <path d="M12.3 13.4c.7-2.2 2.4-3.3 4.9-3-.2 2.5-1.9 3.6-4.9 3Z" opacity="0.78" />
+  </g>
 </svg>
