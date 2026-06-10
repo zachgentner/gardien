@@ -17,6 +17,7 @@ import authPlugin from './plugins/auth.js';
 
 import { healthRoutes } from './routes/health.js';
 import { authRoutes } from './routes/auth.js';
+import { zoneRoutes } from './routes/zone.js';
 import { gardenRoutes } from './routes/gardens.js';
 import { bedRoutes } from './routes/beds.js';
 import { plantRoutes } from './routes/plants.js';
@@ -62,6 +63,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
       tags: [
         { name: 'health', description: 'Liveness/readiness' },
         { name: 'auth', description: 'Authentication & the current user' },
+        { name: 'zone', description: 'Location & USDA hardiness zone' },
         { name: 'gardens', description: 'Gardens' },
         { name: 'beds', description: 'Beds / growing areas' },
         { name: 'plants', description: 'Plant directory & families' },
@@ -81,6 +83,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
   // Routes (all under /api except health).
   await app.register(healthRoutes);
   await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(zoneRoutes, { prefix: '/api/zone' });
   await app.register(gardenRoutes, { prefix: '/api/gardens' });
   await app.register(bedRoutes, { prefix: '/api/beds' });
   await app.register(plantRoutes, { prefix: '/api/plants' });

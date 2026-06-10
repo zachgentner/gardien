@@ -179,6 +179,59 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+.form__status {
+  color: var(--green-dark);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.stack {
+  display: grid;
+  gap: var(--space);
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.inline input {
+  flex: 1 1 10rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.zone-current {
+  margin: 0.25rem 0 1rem;
+}
+
+.zone-preview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.75rem;
+  background: rgba(46, 125, 50, 0.06);
+}
+
+.zone-preview p {
+  margin-top: 0;
+}
+
+.zone-manual {
+  margin-top: 1rem;
+}
+
+.zone-manual summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+}
+
 .list {
   list-style: none;
   margin: 0;

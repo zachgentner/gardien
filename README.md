@@ -89,10 +89,15 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md) for setup and the chosen stack.
       _`jsx-a11y` lint rules + accessible, responsive base styles._
 
 ### Phase 1 — Location & Hardiness Zone
-- [ ] Enter a ZIP code to look up the USDA hardiness zone.
-- [ ] Associate the zone with the account; **allow manual override**.
-- [ ] Store latitude/longitude (for later weather and frost features).
-- [ ] **Cache lookups** and degrade gracefully when the zone API is unavailable.
+- [x] Enter a ZIP code to look up the USDA hardiness zone.
+      _`GET /api/zone/lookup?zip=` via phzmapi.org._
+- [x] Associate the zone with the account; **allow manual override**.
+      _`PUT /api/zone` (ZIP auto-lookup or manual `hardinessZone`); `zoneIsManual`
+      flag protects overrides._
+- [x] Store latitude/longitude (for later weather and frost features).
+      _Saved on the account from the lookup result._
+- [x] **Cache lookups** and degrade gracefully when the zone API is unavailable.
+      _`ZoneLookupCache` table; serves stale cache when upstream is down._
 
 ### Phase 2 — Plant Directory
 The knowledge base that powers planning.

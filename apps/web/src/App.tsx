@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@gardien/shared';
 import { api, ApiRequestError, getToken, type Garden } from './api/client';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
+import { LocationZone } from './components/LocationZone';
 
 export default function App() {
   const online = useOnlineStatus();
@@ -140,7 +141,8 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
   useEffect(refresh, [refresh]);
 
   return (
-    <section aria-labelledby="dash-heading" className="card">
+    <div className="stack">
+      <section aria-labelledby="dash-heading" className="card">
       <div className="card__header">
         <h2 id="dash-heading">Welcome, {user.displayName ?? user.email}</h2>
         <button
@@ -175,6 +177,9 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
           ))}
         </ul>
       )}
-    </section>
+      </section>
+
+      <LocationZone />
+    </div>
   );
 }

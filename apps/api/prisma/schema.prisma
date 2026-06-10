@@ -43,6 +43,16 @@ model User {
   role         UserRole   @default(owner)
   unitSystem   UnitSystem @default(imperial)
 
+  // Location & hardiness zone (Phase 1). The zone drives planting windows and
+  // suitability. Derived from ZIP, but always overridable (microclimates).
+  zipCode       String?
+  hardinessZone String?
+  // True when the user set the zone by hand rather than from a ZIP lookup, so
+  // a later ZIP change doesn't silently clobber their override.
+  zoneIsManual  Boolean @default(false)
+  latitude      Float?
+  longitude     Float?
+
   gardens   Garden[]
   seasons   Season[]
   plants    Plant[]
@@ -329,4 +339,21 @@ model SoilAmendment {
   @@index([bedId])
   @@index([seasonId])
   @@index([deletedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Location & hardiness zone (Phase 1)
+// ---------------------------------------------------------------------------
+
+/// Cached ZIP -> USDA hardiness zone lookups. Lets us avoid re-hitting the
+/// external zone API and keep serving results when it is unavailable
+/// (graceful degradation). `fetchedAt` drives optional freshness checks.
+model ZoneLookupCache {
+  zip           String   @id
+  hardinessZone String
+  latitude      Float?
+  longitude     Float?
+  temperatureRange String?
+  source        String   @default("phzmapi")
+  fetchedAt     DateTime @default(now())
 }
