@@ -3,6 +3,7 @@ import type { AuthUser } from '@gardien/shared';
 import { api, ApiRequestError, getToken, type Garden } from './api/client';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { LocationZone } from './components/LocationZone';
+import { PlantDirectory } from './components/PlantDirectory';
 
 export default function App() {
   const online = useOnlineStatus();
@@ -180,6 +181,7 @@ function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void })
       </section>
 
       <LocationZone />
+      <PlantDirectory />
     </div>
   );
 }

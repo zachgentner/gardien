@@ -63,6 +63,51 @@ const companions: Array<{ a: string; b: string; relation: 'companion' | 'antagon
   { a: 'cucumber', b: 'bush-bean', relation: 'companion', reason: 'Beans fix nitrogen cucumbers appreciate.' },
 ];
 
+// Curated planting/harvest windows by zone (months 1-12, wrap-around allowed).
+interface WindowSeed {
+  slug: string;
+  zone: string;
+  plantStartMonth: number;
+  plantEndMonth: number;
+  harvestStartMonth?: number;
+  harvestEndMonth?: number;
+}
+const windows: WindowSeed[] = [
+  // Zone 7b
+  { slug: 'tomato', zone: '7b', plantStartMonth: 4, plantEndMonth: 5, harvestStartMonth: 7, harvestEndMonth: 9 },
+  { slug: 'bell-pepper', zone: '7b', plantStartMonth: 5, plantEndMonth: 6, harvestStartMonth: 7, harvestEndMonth: 10 },
+  { slug: 'bush-bean', zone: '7b', plantStartMonth: 5, plantEndMonth: 7, harvestStartMonth: 7, harvestEndMonth: 9 },
+  { slug: 'broccoli', zone: '7b', plantStartMonth: 8, plantEndMonth: 9, harvestStartMonth: 10, harvestEndMonth: 12 },
+  { slug: 'carrot', zone: '7b', plantStartMonth: 3, plantEndMonth: 4, harvestStartMonth: 6, harvestEndMonth: 7 },
+  { slug: 'pea', zone: '7b', plantStartMonth: 2, plantEndMonth: 3, harvestStartMonth: 5, harvestEndMonth: 6 },
+  // Zone 8a (a touch earlier / longer)
+  { slug: 'tomato', zone: '8a', plantStartMonth: 3, plantEndMonth: 5, harvestStartMonth: 6, harvestEndMonth: 9 },
+  { slug: 'bell-pepper', zone: '8a', plantStartMonth: 4, plantEndMonth: 5, harvestStartMonth: 6, harvestEndMonth: 10 },
+  { slug: 'jalapeno', zone: '8a', plantStartMonth: 4, plantEndMonth: 5, harvestStartMonth: 7, harvestEndMonth: 10 },
+  { slug: 'cucumber', zone: '8a', plantStartMonth: 4, plantEndMonth: 6, harvestStartMonth: 6, harvestEndMonth: 9 },
+  { slug: 'bush-bean', zone: '8a', plantStartMonth: 4, plantEndMonth: 7, harvestStartMonth: 6, harvestEndMonth: 9 },
+  { slug: 'broccoli', zone: '8a', plantStartMonth: 9, plantEndMonth: 10, harvestStartMonth: 11, harvestEndMonth: 1 },
+  { slug: 'carrot', zone: '8a', plantStartMonth: 2, plantEndMonth: 3, harvestStartMonth: 5, harvestEndMonth: 6 },
+  { slug: 'basil', zone: '8a', plantStartMonth: 4, plantEndMonth: 6, harvestStartMonth: 6, harvestEndMonth: 9 },
+];
+
+// Common pests & diseases.
+interface IssueSeed {
+  slug: string;
+  kind: 'pest' | 'disease';
+  name: string;
+  description?: string;
+  management?: string;
+}
+const issues: IssueSeed[] = [
+  { slug: 'tomato', kind: 'pest', name: 'Tomato hornworm', description: 'Large green caterpillars that defoliate plants fast.', management: 'Hand-pick; encourage parasitic wasps; Bt spray.' },
+  { slug: 'tomato', kind: 'disease', name: 'Early blight', description: 'Concentric dark leaf spots, lower leaves first.', management: 'Mulch, water at the base, rotate, remove affected leaves.' },
+  { slug: 'potato', kind: 'disease', name: 'Late blight', description: 'Water-soaked lesions; can destroy a crop quickly in wet weather.', management: 'Plant resistant varieties; avoid overhead watering; rotate.' },
+  { slug: 'broccoli', kind: 'pest', name: 'Cabbage white caterpillar', description: 'Green caterpillars from white butterflies chew leaves.', management: 'Netting; hand-pick; Bt.' },
+  { slug: 'cucumber', kind: 'pest', name: 'Cucumber beetle', description: 'Spreads bacterial wilt while feeding.', management: 'Row covers until flowering; trap crops.' },
+  { slug: 'carrot', kind: 'pest', name: 'Carrot fly', description: 'Larvae tunnel into roots.', management: 'Fine mesh barriers; interplant with onions; avoid thinning at dusk.' },
+];
+
 async function main(): Promise<void> {
   // --- Admin user ---------------------------------------------------------
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
@@ -131,6 +176,48 @@ async function main(): Promise<void> {
       update: { reason: c.reason },
       create: { plantAId: aId, plantBId: bId, relation: c.relation, reason: c.reason, source: 'Gardien starter dataset' },
     });
+  }
+
+  // --- Planting windows (curated; ownerId null) ---------------------------
+  for (const w of windows) {
+    const plantId = plantBySlug.get(w.slug);
+    if (!plantId) continue;
+    const existing = await prisma.plantingWindow.findFirst({
+      where: { plantId, zone: w.zone, ownerId: null },
+    });
+    const data = {
+      plantStartMonth: w.plantStartMonth,
+      plantEndMonth: w.plantEndMonth,
+      harvestStartMonth: w.harvestStartMonth ?? null,
+      harvestEndMonth: w.harvestEndMonth ?? null,
+      source: 'Gardien starter dataset',
+    };
+    if (existing) {
+      await prisma.plantingWindow.update({ where: { id: existing.id }, data });
+    } else {
+      await prisma.plantingWindow.create({ data: { ...data, plantId, zone: w.zone } });
+    }
+  }
+
+  // --- Pests & diseases (curated) -----------------------------------------
+  for (const i of issues) {
+    const plantId = plantBySlug.get(i.slug);
+    if (!plantId) continue;
+    const existing = await prisma.plantIssue.findFirst({
+      where: { plantId, name: i.name, ownerId: null },
+    });
+    if (!existing) {
+      await prisma.plantIssue.create({
+        data: {
+          plantId,
+          kind: i.kind,
+          name: i.name,
+          description: i.description ?? null,
+          management: i.management ?? null,
+          source: 'Gardien starter dataset',
+        },
+      });
+    }
   }
 
   // --- A demo garden, bed, season, planting & amendment -------------------

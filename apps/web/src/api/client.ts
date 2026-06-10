@@ -75,6 +75,78 @@ export interface ZoneLookup {
   source: 'api' | 'cache' | 'stale-cache';
 }
 
+export interface Plant {
+  id: string;
+  commonName: string;
+  scientificName: string | null;
+  slug: string;
+  type: string;
+  sun: string | null;
+  water: string | null;
+  feederType: string | null;
+  spacingMm: number | null;
+  rowSpacingMm: number | null;
+  daysToMaturityMin: number | null;
+  daysToMaturityMax: number | null;
+  soilNotes: string | null;
+  growingTips: string | null;
+  commonMistakes: string | null;
+  source: string | null;
+  familyId: string | null;
+}
+
+export interface PlantWindow {
+  id: string;
+  zone: string;
+  plantStartMonth: number;
+  plantEndMonth: number;
+  harvestStartMonth: number | null;
+  harvestEndMonth: number | null;
+  source: string | null;
+  notes: string | null;
+  ownerId: string | null;
+}
+
+export interface PlantIssue {
+  id: string;
+  kind: 'pest' | 'disease';
+  name: string;
+  description: string | null;
+  management: string | null;
+  source: string | null;
+}
+
+export interface PlantCompanion {
+  linkId: string;
+  plantId: string;
+  relation: 'companion' | 'antagonist';
+  reason: string | null;
+}
+
+export interface PlantDetail extends Plant {
+  windows: PlantWindow[];
+  issues: PlantIssue[];
+  companions: PlantCompanion[];
+}
+
+export interface PlantFamily {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  rotationGroup: string | null;
+  source: string | null;
+}
+
+export interface PlantSearchParams {
+  q?: string;
+  type?: string;
+  familyId?: string;
+  zone?: string;
+  month?: number;
+  companionOf?: string;
+}
+
 export const api = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {
@@ -107,5 +179,19 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(input),
     });
+  },
+  searchPlants(params: PlantSearchParams = {}) {
+    const qs = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== '') qs.set(key, String(value));
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Plant[]>(`/api/plants${suffix}`);
+  },
+  getPlant(id: string) {
+    return request<PlantDetail>(`/api/plants/${id}`);
+  },
+  listFamilies() {
+    return request<PlantFamily[]>('/api/plants/families');
   },
 };
