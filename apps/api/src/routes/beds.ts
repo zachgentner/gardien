@@ -1,7 +1,18 @@
-import { Type } from '@sinclair/typebox';
+import { Type, type Static } from '@sinclair/typebox';
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
+import { CompanionRelation } from '@gardien/shared';
 import { IdParam, Timestamps, NullableDateTime, DateTime, errorResponses } from '../schemas/common.js';
 import { deriveAreaSqM, partitionPlantings, type PlantingStatus } from '../domain/bed.js';
+import {
+  findAntagonisticPairs,
+  findCompanionPairs,
+  type CompanionEdge,
+  type PlantRef,
+} from '../domain/companion.js';
+import { checkRotation, type BedHistoryEntry } from '../domain/rotation.js';
+import { evaluateCapacity, type SpacedPlanting } from '../domain/spacing.js';
+
+const SEASON_ORDER: Record<string, number> = { spring: 0, summer: 1, fall: 2, winter: 3 };
 
 const BedTypeEnum = Type.Union([
   Type.Literal('raised_bed'),
@@ -87,6 +98,60 @@ const BedDetail = Type.Intersect([
     amendments: Type.Array(BedAmendment),
   }),
 ]);
+
+const ListPlanQuery = Type.Object({
+  seasonId: Type.String({ minLength: 1 }),
+});
+
+const PlanPlant = Type.Object({
+  plantingId: Type.String(),
+  plantId: Type.String(),
+  name: Type.String(),
+  quantity: Type.Integer(),
+  status: PlantingStatusEnum,
+});
+
+const PairFinding = Type.Object({
+  plantAName: Type.String(),
+  plantBName: Type.String(),
+  reason: Type.Union([Type.String(), Type.Null()]),
+});
+
+const RotationFinding = Type.Object({
+  plantName: Type.String(),
+  lastSeasonsAgo: Type.Integer(),
+  message: Type.String(),
+});
+
+const Capacity = Type.Object({
+  areaSqM: Type.Union([Type.Number(), Type.Null()]),
+  usedSqM: Type.Number(),
+  overBy: Type.Number(),
+  over: Type.Boolean(),
+  unknown: Type.Array(Type.String()),
+});
+
+const SuitabilityFinding = Type.Object({ plantName: Type.String(), zone: Type.String() });
+
+/**
+ * Plan-time conflict report for a bed in a season: what's slated, plus
+ * incompatible neighbours, rotation violations, overcrowding, and zone
+ * suitability — surfaced before anything goes in the ground (Phase 4).
+ */
+const BedPlan = Type.Object({
+  bedId: Type.String(),
+  bedName: Type.String(),
+  seasonId: Type.String(),
+  seasonName: Type.String(),
+  zone: Type.Union([Type.String(), Type.Null()]),
+  plants: Type.Array(PlanPlant),
+  capacity: Capacity,
+  antagonists: Type.Array(PairFinding),
+  companions: Type.Array(PairFinding),
+  rotation: Type.Array(RotationFinding),
+  unsuitable: Type.Array(SuitabilityFinding),
+  warningCount: Type.Integer(),
+});
 
 export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.addHook('onRequest', app.authenticate);
@@ -223,6 +288,196 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
           notes: a.notes,
           seasonId: a.seasonId,
         })),
+      };
+    },
+  );
+
+  app.get(
+    '/:id/plan',
+    {
+      schema: {
+        tags: ['beds'],
+        summary: 'Plan-time conflict report for a bed in a season',
+        description:
+          'Evaluates the bed’s planned/planted plantings for a season and reports ' +
+          'incompatible neighbours, rotation violations, overcrowding, and zone suitability.',
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        querystring: ListPlanQuery,
+        response: { 200: BedPlan, ...errorResponses },
+      },
+    },
+    async (request, reply) => {
+      const [bed, season, me] = await Promise.all([
+        app.prisma.bed.findFirst({
+          where: { id: request.params.id, garden: { ownerId: request.user.sub } },
+          include: { garden: { select: { hardinessZone: true } } },
+        }),
+        app.prisma.season.findFirst({
+          where: { id: request.query.seasonId, ownerId: request.user.sub },
+        }),
+        app.prisma.user.findUnique({
+          where: { id: request.user.sub },
+          select: { hardinessZone: true },
+        }),
+      ]);
+      if (!bed) return reply.notFound('Bed not found.');
+      if (!season) return reply.notFound('Season not found.');
+
+      const zone = bed.garden.hardinessZone ?? me?.hardinessZone ?? null;
+
+      // What's slated for this bed + season (the plan).
+      const planRecords = await app.prisma.plantingRecord.findMany({
+        where: {
+          bedId: bed.id,
+          seasonId: season.id,
+          deletedAt: null,
+          status: { in: ['planned', 'planted'] },
+        },
+        include: {
+          plant: {
+            select: {
+              id: true,
+              commonName: true,
+              familyId: true,
+              spacingMm: true,
+              rowSpacingMm: true,
+            },
+          },
+        },
+      });
+
+      const plants: Static<typeof PlanPlant>[] = planRecords.map((p) => ({
+        plantingId: p.id,
+        plantId: p.plantId,
+        name: p.plant.commonName,
+        quantity: p.quantity,
+        status: p.status as PlantingStatus,
+      }));
+
+      // Distinct plants present, for companion pairing and zone suitability.
+      const refs = new Map<string, PlantRef>();
+      for (const p of planRecords) refs.set(p.plant.id, { id: p.plant.id, name: p.plant.commonName });
+      const plantIds = [...refs.keys()];
+
+      // Companion graph among the plants in the bed.
+      const links =
+        plantIds.length > 0
+          ? await app.prisma.companionLink.findMany({
+              where: { plantAId: { in: plantIds }, plantBId: { in: plantIds } },
+            })
+          : [];
+      const edges: CompanionEdge[] = links.map((l) => ({
+        aId: l.plantAId,
+        bId: l.plantBId,
+        relation: l.relation as CompanionRelation,
+        reason: l.reason ?? undefined,
+      }));
+      const refList = [...refs.values()];
+      const toPair = (f: { plantAName: string; plantBName: string; reason?: string }) => ({
+        plantAName: f.plantAName,
+        plantBName: f.plantBName,
+        reason: f.reason ?? null,
+      });
+      const antagonists = findAntagonisticPairs(refList, edges).map(toPair);
+      const companions = findCompanionPairs(refList, edges).map(toPair);
+
+      // Overcrowding.
+      const capacity = evaluateCapacity(
+        planRecords.map(
+          (p): SpacedPlanting => ({
+            plantName: p.plant.commonName,
+            quantity: p.quantity,
+            spacingMm: p.plant.spacingMm,
+            rowSpacingMm: p.plant.rowSpacingMm,
+          }),
+        ),
+        bed.areaSqM,
+      );
+
+      // Rotation: order this bed's seasons chronologically, then check each
+      // family in the current plan against earlier seasons.
+      const history = await app.prisma.plantingRecord.findMany({
+        where: { bedId: bed.id, deletedAt: null },
+        include: {
+          plant: { select: { familyId: true } },
+          season: { select: { id: true, year: true, seasonType: true, startDate: true, createdAt: true } },
+        },
+      });
+      const seasons = new Map<string, { year: number; type: string; at: number }>();
+      for (const h of history) {
+        seasons.set(h.season.id, {
+          year: h.season.year,
+          type: h.season.seasonType,
+          at: (h.season.startDate ?? h.season.createdAt).getTime(),
+        });
+      }
+      seasons.set(season.id, {
+        year: season.year,
+        type: season.seasonType,
+        at: (season.startDate ?? season.createdAt).getTime(),
+      });
+      const seq = new Map<string, number>();
+      [...seasons.entries()]
+        .sort(([, a], [, b]) =>
+          a.year - b.year || (SEASON_ORDER[a.type] ?? 0) - (SEASON_ORDER[b.type] ?? 0) || a.at - b.at,
+        )
+        .forEach(([id], i) => seq.set(id, i));
+
+      const candidateSequence = seq.get(season.id)!;
+      const historyEntries: BedHistoryEntry[] = history
+        .filter((h) => (seq.get(h.season.id) ?? 0) < candidateSequence)
+        .map((h) => ({ sequence: seq.get(h.season.id)!, familyId: h.plant.familyId }));
+
+      // One rotation finding per offending family, naming the plants involved.
+      const namesByFamily = new Map<string, Set<string>>();
+      for (const p of planRecords) {
+        if (!p.plant.familyId) continue;
+        const set = namesByFamily.get(p.plant.familyId) ?? new Set<string>();
+        set.add(p.plant.commonName);
+        namesByFamily.set(p.plant.familyId, set);
+      }
+      const rotation: Static<typeof RotationFinding>[] = [];
+      for (const [familyId, names] of namesByFamily) {
+        const check = checkRotation(historyEntries, familyId, candidateSequence);
+        if (check.violated) {
+          rotation.push({
+            plantName: [...names].join(', '),
+            lastSeasonsAgo: check.lastSeasonsAgo ?? 0,
+            message: check.message ?? 'Rotation conflict.',
+          });
+        }
+      }
+
+      // Zone suitability: a plant with no planting window for the zone is risky.
+      let unsuitable: Static<typeof SuitabilityFinding>[] = [];
+      if (zone && plantIds.length > 0) {
+        const windows = await app.prisma.plantingWindow.findMany({
+          where: { plantId: { in: plantIds }, zone, deletedAt: null },
+          select: { plantId: true },
+        });
+        const ok = new Set(windows.map((w) => w.plantId));
+        unsuitable = refList
+          .filter((p) => !ok.has(p.id))
+          .map((p) => ({ plantName: p.name, zone }));
+      }
+
+      const warningCount =
+        antagonists.length + rotation.length + unsuitable.length + (capacity.over ? 1 : 0);
+
+      return {
+        bedId: bed.id,
+        bedName: bed.name,
+        seasonId: season.id,
+        seasonName: season.name,
+        zone,
+        plants,
+        capacity,
+        antagonists,
+        companions,
+        rotation,
+        unsuitable,
+        warningCount,
       };
     },
   );

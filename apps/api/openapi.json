@@ -3154,6 +3154,313 @@
         }
       }
     },
+    "/api/beds/{id}/plan": {
+      "get": {
+        "summary": "Plan-time conflict report for a bed in a season",
+        "tags": [
+          "beds"
+        ],
+        "description": "Evaluates the bed’s planned/planted plantings for a season and reports incompatible neighbours, rotation violations, overcrowding, and zone suitability.",
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "seasonId",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "bedId",
+                    "bedName",
+                    "seasonId",
+                    "seasonName",
+                    "zone",
+                    "plants",
+                    "capacity",
+                    "antagonists",
+                    "companions",
+                    "rotation",
+                    "unsuitable",
+                    "warningCount"
+                  ],
+                  "properties": {
+                    "bedId": {
+                      "type": "string"
+                    },
+                    "bedName": {
+                      "type": "string"
+                    },
+                    "seasonId": {
+                      "type": "string"
+                    },
+                    "seasonName": {
+                      "type": "string"
+                    },
+                    "zone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "plants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "plantingId",
+                          "plantId",
+                          "name",
+                          "quantity",
+                          "status"
+                        ],
+                        "properties": {
+                          "plantingId": {
+                            "type": "string"
+                          },
+                          "plantId": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "planned"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "planted"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "harvested"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "removed"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "capacity": {
+                      "type": "object",
+                      "required": [
+                        "areaSqM",
+                        "usedSqM",
+                        "overBy",
+                        "over",
+                        "unknown"
+                      ],
+                      "properties": {
+                        "areaSqM": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "usedSqM": {
+                          "type": "number"
+                        },
+                        "overBy": {
+                          "type": "number"
+                        },
+                        "over": {
+                          "type": "boolean"
+                        },
+                        "unknown": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "antagonists": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "plantAName",
+                          "plantBName",
+                          "reason"
+                        ],
+                        "properties": {
+                          "plantAName": {
+                            "type": "string"
+                          },
+                          "plantBName": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "companions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "plantAName",
+                          "plantBName",
+                          "reason"
+                        ],
+                        "properties": {
+                          "plantAName": {
+                            "type": "string"
+                          },
+                          "plantBName": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "rotation": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "plantName",
+                          "lastSeasonsAgo",
+                          "message"
+                        ],
+                        "properties": {
+                          "plantName": {
+                            "type": "string"
+                          },
+                          "lastSeasonsAgo": {
+                            "type": "integer"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "unsuitable": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "plantName",
+                          "zone"
+                        ],
+                        "properties": {
+                          "plantName": {
+                            "type": "string"
+                          },
+                          "zone": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "warningCount": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/plants/families": {
       "get": {
         "summary": "List plant families (drive rotation/disease rules)",

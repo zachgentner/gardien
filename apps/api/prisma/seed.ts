@@ -278,6 +278,26 @@ async function main(): Promise<void> {
     }
   }
 
+  // A planned potato in the same bed/season as the tomato — they are seeded as
+  // antagonists, so the Phase 4 plan check surfaces a "keep apart" warning.
+  const potatoId = plantBySlug.get('potato');
+  if (potatoId) {
+    const existingPotato = await prisma.plantingRecord.findFirst({
+      where: { bedId: bed.id, plantId: potatoId, seasonId: season.id },
+    });
+    if (!existingPotato) {
+      await prisma.plantingRecord.create({
+        data: {
+          bedId: bed.id,
+          plantId: potatoId,
+          seasonId: season.id,
+          quantity: 6,
+          status: 'planned',
+        },
+      });
+    }
+  }
+
   const existingAmendment = await prisma.soilAmendment.findFirst({
     where: { bedId: bed.id, name: 'Compost' },
   });
