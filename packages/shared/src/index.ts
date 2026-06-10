@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   displayName: string | null;
   role: string;
+  unitSystem: string;
 }
 
 export interface AuthResponse {

@@ -63,6 +63,42 @@ export function squareMetersTo(value: number, unit: AreaUnit): number {
   return value / AREA_TO_M2[unit];
 }
 
+/** Round to at most `decimals` places and drop any trailing zeros. */
+function tidy(value: number, decimals = 2): string {
+  return Number(value.toFixed(decimals)).toString();
+}
+
+/**
+ * Format a stored length (millimetres) for display in the user's system:
+ * metres for metric, feet for imperial. Used so beds entered in either system
+ * read naturally without exposing the canonical millimetre storage.
+ */
+export function formatLength(mm: number, system: UnitSystem): string {
+  return system === UnitSystem.Imperial
+    ? `${tidy(millimetersTo(mm, LengthUnit.Foot))} ft`
+    : `${tidy(millimetersTo(mm, LengthUnit.Meter))} m`;
+}
+
+/** Format a stored area (square metres) as m² (metric) or ft² (imperial). */
+export function formatArea(squareMeters: number, system: UnitSystem): string {
+  return system === UnitSystem.Imperial
+    ? `${tidy(squareMetersTo(squareMeters, AreaUnit.SquareFoot))} ft²`
+    : `${tidy(squareMeters)} m²`;
+}
+
+/**
+ * Format a bed's length × width for display, or null when either dimension is
+ * missing (dimensions are optional on a bed).
+ */
+export function formatDimensions(
+  lengthMm: number | null | undefined,
+  widthMm: number | null | undefined,
+  system: UnitSystem,
+): string | null {
+  if (lengthMm == null || widthMm == null) return null;
+  return `${formatLength(lengthMm, system)} × ${formatLength(widthMm, system)}`;
+}
+
 export function celsiusToFahrenheit(c: number): number {
   return (c * 9) / 5 + 32;
 }
