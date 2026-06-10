@@ -41,7 +41,9 @@ export function checkRotation(
   candidateSequence: number,
   options: Partial<RotationOptions> = {},
 ): RotationCheck {
-  const { minGap } = { ...DEFAULT_OPTIONS, ...options };
+  // Use `??` rather than a spread so an explicit `{ minGap: undefined }` from a
+  // caller falls back to the default instead of disabling the check.
+  const minGap = options.minGap ?? DEFAULT_OPTIONS.minGap;
   if (candidateFamilyId === null) return { violated: false };
 
   let mostRecent = -Infinity;

@@ -1,6 +1,6 @@
 import { Type, type Static } from '@sinclair/typebox';
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { CompanionRelation } from '@gardien/shared';
+import { CompanionRelation, FeederType } from '@gardien/shared';
 import { IdParam, Timestamps, NullableDateTime, DateTime, errorResponses } from '../schemas/common.js';
 import { deriveAreaSqM, partitionPlantings, type PlantingStatus } from '../domain/bed.js';
 import {
@@ -12,6 +12,7 @@ import {
 import { checkRotation, type BedHistoryEntry } from '../domain/rotation.js';
 import { evaluateCapacity, type SpacedPlanting } from '../domain/spacing.js';
 import { effectiveWindow, type PlantingWindow } from '../domain/planting.js';
+import { recommendForBed, type RecommendCandidate } from '../domain/recommend.js';
 
 const SEASON_ORDER: Record<string, number> = { spring: 0, summer: 1, fall: 2, winter: 3 };
 
@@ -158,6 +159,20 @@ const BedPlan = Type.Object({
   rotation: Type.Array(RotationFinding),
   unsuitable: Type.Array(SuitabilityFinding),
   warningCount: Type.Integer(),
+});
+
+const Recommendation = Type.Object({
+  plantId: Type.String(),
+  name: Type.String(),
+  reason: Type.String(),
+});
+
+/** What to grow in a bed next, from its rotation history (Phase 5). */
+const BedRecommendations = Type.Object({
+  bedId: Type.String(),
+  seasonId: Type.String(),
+  zone: Type.Union([Type.String(), Type.Null()]),
+  recommendations: Type.Array(Recommendation),
 });
 
 export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
@@ -518,6 +533,104 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
         unsuitable,
         warningCount,
       };
+    },
+  );
+
+  app.get(
+    '/:id/recommendations',
+    {
+      schema: {
+        tags: ['beds'],
+        summary: 'Recommended plants for a bed in a season, from rotation history',
+        description:
+          'Suggests what to grow next: feeder-succession order (e.g. legumes after ' +
+          'heavy feeders), excluding rotation conflicts and zone-unsuitable plants.',
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        querystring: ListPlanQuery,
+        response: { 200: BedRecommendations, ...errorResponses },
+      },
+    },
+    async (request, reply) => {
+      const [bed, season, me] = await Promise.all([
+        app.prisma.bed.findFirst({
+          where: { id: request.params.id, garden: { ownerId: request.user.sub } },
+          include: { garden: { select: { hardinessZone: true } } },
+        }),
+        app.prisma.season.findFirst({
+          where: { id: request.query.seasonId, ownerId: request.user.sub },
+        }),
+        app.prisma.user.findUnique({
+          where: { id: request.user.sub },
+          select: { hardinessZone: true },
+        }),
+      ]);
+      if (!bed) return reply.notFound('Bed not found.');
+      if (!season) return reply.notFound('Season not found.');
+      const zone = bed.garden.hardinessZone ?? me?.hardinessZone ?? null;
+
+      // Bed history (families + feeders) ordered by season sequence.
+      const bedPlantings = await app.prisma.plantingRecord.findMany({
+        where: { bedId: bed.id, deletedAt: null },
+        include: {
+          plant: { select: { familyId: true, feederType: true } },
+          season: { select: { id: true, year: true, seasonType: true, startDate: true, createdAt: true } },
+        },
+      });
+      const seasons = new Map<string, { year: number; type: string; at: number }>();
+      for (const h of bedPlantings) {
+        seasons.set(h.season.id, {
+          year: h.season.year,
+          type: h.season.seasonType,
+          at: (h.season.startDate ?? h.season.createdAt).getTime(),
+        });
+      }
+      seasons.set(season.id, {
+        year: season.year,
+        type: season.seasonType,
+        at: (season.startDate ?? season.createdAt).getTime(),
+      });
+      const seq = new Map<string, number>();
+      [...seasons.entries()]
+        .sort(([, a], [, b]) =>
+          a.year - b.year || (SEASON_ORDER[a.type] ?? 0) - (SEASON_ORDER[b.type] ?? 0) || a.at - b.at,
+        )
+        .forEach(([id], i) => seq.set(id, i));
+      const candidateSequence = seq.get(season.id)!;
+      const history = bedPlantings
+        .filter((h) => (seq.get(h.season.id) ?? 0) < candidateSequence)
+        .map((h) => ({
+          sequence: seq.get(h.season.id)!,
+          familyId: h.plant.familyId,
+          feederType: (h.plant.feederType as FeederType | null) ?? null,
+        }));
+
+      // Candidate plants: the global directory plus the user's custom entries.
+      const dir = await app.prisma.plant.findMany({
+        where: { deletedAt: null, OR: [{ ownerId: null }, { ownerId: request.user.sub }] },
+        select: { id: true, commonName: true, familyId: true, feederType: true },
+      });
+      let suitable = new Set<string>();
+      if (zone) {
+        const windows = await app.prisma.plantingWindow.findMany({
+          where: { plantId: { in: dir.map((p) => p.id) }, zone, deletedAt: null },
+          select: { plantId: true },
+        });
+        suitable = new Set(windows.map((w) => w.plantId));
+      }
+      const candidates: RecommendCandidate[] = dir.map((p) => ({
+        id: p.id,
+        name: p.commonName,
+        familyId: p.familyId,
+        feederType: (p.feederType as FeederType | null) ?? null,
+        suitable: zone ? suitable.has(p.id) : true,
+      }));
+
+      const recommendations = recommendForBed(history, candidateSequence, candidates, {
+        limit: 6,
+      }).map((r) => ({ plantId: r.plantId, name: r.name, reason: r.reason }));
+
+      return { bedId: bed.id, seasonId: season.id, zone, recommendations };
     },
   );
 
