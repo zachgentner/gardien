@@ -1031,10 +1031,110 @@ input[type='checkbox'] {
   border-top: 1px solid var(--border);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+/* --- Plant directory --- */
+select {
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  min-height: 44px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.directory {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) 1.4fr;
+  gap: var(--space);
+  align-items: start;
+}
+
+@media (max-width: 40rem) {
+  .directory {
+    grid-template-columns: 1fr;
+  }
+}
+
+.directory__list .list__item {
+  padding: 0;
+}
+
+.link-button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: none;
+  padding: 0.85rem 1rem;
+  min-height: 44px;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.link-button:hover {
+  background: rgba(46, 125, 50, 0.06);
+}
+
+.link-button[aria-pressed='true'] {
+  background: rgba(46, 125, 50, 0.12);
+  outline: 2px solid var(--green);
+}
+
+.directory__detail {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  min-height: 8rem;
+}
+
+.plant-card header h4 {
+  margin: 0;
+}
+
+.plant-card__sci {
+  margin: 0.1rem 0 0.75rem;
+  font-style: italic;
+}
+
+.plant-card h5 {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.plant-card__attrs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.attr dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.attr dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.plant-card__source {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
   padding: 0;
   margin: -1px;
   overflow: hidden;
@@ -1155,6 +1255,70 @@ input[type='checkbox'] {
   .workspace__main {
     max-width: none;
   }
+}
+
+/* --- Garden & bed management (Phase 3) --- */
+.button--danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--border);
+}
+
+.manage-add {
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+}
+
+.manage-add summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+}
+
+.manage-add .form {
+  margin-top: 0.75rem;
+}
+
+.manage-actions {
+  margin: 0.75rem 0 0.5rem;
+}
+
+/* Wider forms (beds) lay fields out in a responsive grid. */
+.form--wide {
+  max-width: none;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  align-items: end;
+}
+
+.form--wide__full {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.bed-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.bed-section h4 {
+  margin: 0 0 0.75rem;
+}
+
+.bed-detail {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  background: rgba(46, 125, 50, 0.04);
+}
+
+.bed-detail h5 {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.95rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

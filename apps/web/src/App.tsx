@@ -2,18 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@gardien/shared';
 import { api, ApiRequestError, getToken } from './api/client';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
-import { useHashRoute } from './hooks/useHashRoute';
-import { Sidebar } from './components/Sidebar';
-import { ShieldMark } from './components/ShieldMark';
-import { SECTIONS, type ViewId } from './components/sections';
-import { Home } from './components/Home';
-import { GardenManager } from './components/GardenManager';
-import { GardenPlanner } from './components/GardenPlanner';
+import { LocationZone } from './components/LocationZone';
 import { PlantDirectory } from './components/PlantDirectory';
-import { ActivityLog } from './components/ActivityLog';
-import { Settings } from './components/Settings';
-
-const ROUTES = SECTIONS.map((s) => s.id);
 
 export default function App() {
   const online = useOnlineStatus();
@@ -202,5 +192,31 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
         </button>
       </form>
     </section>
+  );
+}
+
+function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  return (
+    <div className="stack">
+      <section aria-labelledby="dash-heading" className="card">
+        <div className="card__header">
+          <h2 id="dash-heading">Welcome, {user.displayName ?? user.email}</h2>
+          <button
+            type="button"
+            className="button--ghost"
+            onClick={() => {
+              api.logout();
+              onLogout();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      </section>
+
+      <GardenManager unitSystem={user.unitSystem} />
+      <LocationZone />
+      <PlantDirectory />
+    </div>
   );
 }

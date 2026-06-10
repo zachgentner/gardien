@@ -126,33 +126,6 @@ export interface Season {
   notes: string | null;
 }
 
-/** A planting record as returned by the list endpoint (no embedded plant). */
-export interface Planting {
-  id: string;
-  quantity: number;
-  status: PlantingStatus;
-  plannedPlantDate: string | null;
-  plannedHarvestDate: string | null;
-  plantedOn: string | null;
-  harvestedOn: string | null;
-  notes: string | null;
-  bedId: string;
-  plantId: string;
-  seasonId: string;
-}
-
-/** A soil amendment as returned by the list endpoint. */
-export interface Amendment {
-  id: string;
-  name: string;
-  appliedOn: string;
-  amount: number | null;
-  amountUnit: string | null;
-  notes: string | null;
-  bedId: string;
-  seasonId: string | null;
-}
-
 export interface GardenInput {
   name: string;
   description?: string;
@@ -257,75 +230,6 @@ export interface PlantSearchParams {
   companionOf?: string;
 }
 
-export interface PlanPlant {
-  plantingId: string;
-  plantId: string;
-  name: string;
-  quantity: number;
-  status: PlantingStatus;
-  plantStartMonth: number | null;
-  plantEndMonth: number | null;
-  harvestStartMonth: number | null;
-  harvestEndMonth: number | null;
-}
-
-export interface PairFinding {
-  plantAName: string;
-  plantBName: string;
-  reason: string | null;
-}
-
-export interface RotationFinding {
-  plantName: string;
-  lastSeasonsAgo: number;
-  message: string;
-}
-
-export interface Capacity {
-  areaSqM: number | null;
-  usedSqM: number;
-  overBy: number;
-  over: boolean;
-  unknown: string[];
-}
-
-export interface SuitabilityFinding {
-  plantName: string;
-  zone: string;
-}
-
-export interface BedPlan {
-  bedId: string;
-  bedName: string;
-  seasonId: string;
-  seasonName: string;
-  zone: string | null;
-  plants: PlanPlant[];
-  capacity: Capacity;
-  antagonists: PairFinding[];
-  companions: PairFinding[];
-  rotation: RotationFinding[];
-  unsuitable: SuitabilityFinding[];
-  warningCount: number;
-}
-
-export interface PlantingInput {
-  bedId: string;
-  plantId: string;
-  seasonId: string;
-  quantity?: number;
-  status?: PlantingStatus;
-  plannedPlantDate?: string;
-  plannedHarvestDate?: string;
-}
-
-export interface SeasonInput {
-  name: string;
-  seasonType: string;
-  year: number;
-  isActive?: boolean;
-}
-
 export const api = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {
@@ -375,49 +279,6 @@ export const api = {
   },
   listSeasons() {
     return request<Season[]>('/api/seasons');
-  },
-  listPlantings(params: { bedId?: string; seasonId?: string } = {}) {
-    const qs = new URLSearchParams();
-    if (params.bedId) qs.set('bedId', params.bedId);
-    if (params.seasonId) qs.set('seasonId', params.seasonId);
-    const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return request<Planting[]>(`/api/plantings${suffix}`);
-  },
-  listAmendments(params: { bedId?: string; seasonId?: string } = {}) {
-    const qs = new URLSearchParams();
-    if (params.bedId) qs.set('bedId', params.bedId);
-    if (params.seasonId) qs.set('seasonId', params.seasonId);
-    const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return request<Amendment[]>(`/api/amendments${suffix}`);
-  },
-  getBedPlan(bedId: string, seasonId: string) {
-    return request<BedPlan>(`/api/beds/${bedId}/plan?seasonId=${encodeURIComponent(seasonId)}`);
-  },
-  createPlanting(input: PlantingInput) {
-    return request<Planting>('/api/plantings', { method: 'POST', body: JSON.stringify(input) });
-  },
-  updatePlanting(
-    id: string,
-    input: Partial<{
-      quantity: number;
-      status: PlantingStatus;
-      plannedPlantDate: string;
-      plannedHarvestDate: string;
-      plantedOn: string;
-      harvestedOn: string;
-      notes: string;
-    }>,
-  ) {
-    return request<Planting>(`/api/plantings/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(input),
-    });
-  },
-  archivePlanting(id: string) {
-    return request<Planting>(`/api/plantings/${id}`, { method: 'DELETE' });
-  },
-  createSeason(input: SeasonInput) {
-    return request<Season>('/api/seasons', { method: 'POST', body: JSON.stringify(input) });
   },
   getZone() {
     return request<AccountLocation>('/api/zone');
