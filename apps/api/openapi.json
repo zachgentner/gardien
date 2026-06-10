@@ -9718,6 +9718,248 @@
           }
         }
       }
+    },
+    "/api/weather/": {
+      "get": {
+        "summary": "Localized forecast, frost warnings, and pest/disease watch",
+        "tags": [
+          "weather"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "located",
+                    "latitude",
+                    "longitude",
+                    "source",
+                    "forecast",
+                    "frostWarnings",
+                    "pestWatch"
+                  ],
+                  "properties": {
+                    "located": {
+                      "type": "boolean"
+                    },
+                    "latitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "longitude": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "api"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "cache"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "stale-cache"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "forecast": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "date",
+                          "tempMinC",
+                          "tempMaxC",
+                          "precipMm"
+                        ],
+                        "properties": {
+                          "date": {
+                            "type": "string"
+                          },
+                          "tempMinC": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "tempMaxC": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "precipMm": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "frostWarnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "date",
+                          "tempMinC",
+                          "severity"
+                        ],
+                        "properties": {
+                          "date": {
+                            "type": "string"
+                          },
+                          "tempMinC": {
+                            "type": "number"
+                          },
+                          "severity": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "frost"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "light-frost"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "pestWatch": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "plantName",
+                          "name",
+                          "kind",
+                          "management"
+                        ],
+                        "properties": {
+                          "plantName": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "pest"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "disease"
+                                ]
+                              }
+                            ]
+                          },
+                          "management": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -9766,6 +10008,10 @@
     {
       "name": "data",
       "description": "Data export / import"
+    },
+    {
+      "name": "weather",
+      "description": "Weather-driven alerts"
     }
   ]
 }
