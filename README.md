@@ -152,13 +152,23 @@ The knowledge base that powers planning.
       tests — 59 in total._
 
 ### Phase 5 — History & Recommendations
-- [ ] Record what was planted in each bed each season.
-- [ ] Track soil amendments per bed over time.
-- [ ] Recommend plants per bed based on rotation history (e.g. follow heavy
+- [x] Record what was planted in each bed each season.
+      _Planting records (bed + season + plant + status/dates); surfaced in the
+      bed detail and the Journal._
+- [x] Track soil amendments per bed over time.
+      _`/api/amendments` CRUD with a "Record an amendment" form on the bed detail._
+- [x] Recommend plants per bed based on rotation history (e.g. follow heavy
       feeders with soil-enriching legumes) — **family-aware** and **overridable**.
-- [ ] Surface warnings (e.g. planting the same family in the same bed too soon).
+      _`GET /api/beds/:id/recommendations` ranks by feeder succession, excluding
+      rotation conflicts and zone-unsuitable plants; shown as "Recommended next"._
+- [x] Surface warnings (e.g. planting the same family in the same bed too soon).
+      _Rotation, companion, and overcrowding warnings appear in the planner's
+      conflict panel at plan time._
 - [ ] **Data export/import** (CSV/JSON) — also eases the eventual SaaS migration.
-- [ ] **Tests** covering the rotation/recommendation logic.
+      _Export (JSON) shipped — `GET /api/export` + a Settings download. Import is
+      a focused follow-up._
+- [x] **Tests** covering the rotation/recommendation logic.
+      _`recommend.test.ts` joins the rotation tests — 58 in total._
 
 ### Phase 6 — Weather-Driven Alerts
 Builds on the location data from Phase 1.
@@ -209,13 +219,15 @@ Sensor metrics the IoT layer will collect:
 
 ## Status
 
-**Phases 0–3 are in place.** Phase 0 laid a deployable single-user PWA skeleton
+**Phases 0–4 are in place.** Phase 0 laid a deployable single-user PWA skeleton
 (monorepo, documented API contract, PWA shell, full core data model, auth
 scaffolding, CI with tests, seed data, backups, accessibility baseline). Phase 1
 added location & USDA hardiness zone; Phase 2 the plant directory; Phase 3
-garden & bed management — gardens and beds with unit-aware dimensions, a
-bed-detail view of current plantings, planting history, and soil amendments, and
-soft-delete archiving throughout. See [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
+garden & bed management; Phase 4 garden planning — a calendar-centric planner
+that assigns plants to beds for a season and runs plan-time conflict detection
+(incompatible neighbors, rotation, overcrowding, zone suitability) with a
+12-month planting/harvest calendar. The app shell is a left-sidebar layout
+(Home, Garden Manager, Garden Planner, Plant Directory, Journal, Settings). See
+[DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
 
-The next focus is Phase 4 (garden planning) and Phase 5 (history &
-recommendations), still as a single-user PWA.
+The next focus is Phase 5 (history & recommendations), still as a single-user PWA.
