@@ -1,0 +1,71 @@
+# Local / self-hosted Gardien stack: Postgres + API + web (PWA) + nightly backups.
+#   cp .env.example .env   # then adjust secrets
+#   docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gardien}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gardien_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-gardien}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-gardien}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gardien}:${POSTGRES_PASSWORD:-gardien_dev_password}@db:5432/${POSTGRES_DB:-gardien}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+    ports:
+      - '3000:3000'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '8080:80'
+
+  # Automated database backups: nightly pg_dump with retention pruning.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGUSER: ${POSTGRES_USER:-gardien}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-gardien_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-gardien}
+      DB_HOST: db
+      BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./ops/backup.sh:/usr/local/bin/backup.sh:ro
+      - ./backups:/backups
+    entrypoint: ['sh', '-c', 'echo "$$BACKUP_CRON sh /usr/local/bin/backup.sh" > /etc/crontabs/root && crond -f -l 8']
+
+volumes:
+  db-data:

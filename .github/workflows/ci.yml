@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Automated tests wired up from the first commit (Phase 0 requirement).
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gardien
+          POSTGRES_PASSWORD: gardien
+          POSTGRES_DB: gardien_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gardien"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://gardien:gardien@localhost:5432/gardien_test?schema=public
+      JWT_SECRET: ci-test-secret
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace @gardien/api
+
+      - name: Apply migrations (test database)
+        run: npm run prisma:deploy --workspace @gardien/api
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Verify OpenAPI contract is current
+        working-directory: apps/api
+        run: |
+          npm run openapi
+          git diff --exit-code openapi.json \
+            || (echo "::error::openapi.json is out of date — run 'npm run openapi' in apps/api and commit." && exit 1)
+
+      - name: Build
+        run: npm run build

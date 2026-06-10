@@ -1,0 +1,332 @@
+// Gardien core data model (Phase 0).
+//
+// Cross-cutting principles baked in at the schema level:
+//   * Explicit units   — physical quantities stored in canonical metric
+//                        (lengths in millimetres, areas in m^2); the user's
+//                        preferred display system lives on `User.unitSystem`.
+//   * Soft deletes     — every user-facing entity has `deletedAt`; archiving a
+//                        bed/garden/season never destroys its history.
+//   * Seasons first-class — `Season` is its own table; plantings & amendments
+//                        are scoped to a season.
+//   * Multi-user ready — user-owned rows carry `ownerId`; the plant directory
+//                        is global (ownerId null) but allows per-user entries
+//                        later, so Phase 8 multi-tenancy is not a retrofit.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Accounts & auth
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  owner
+  member
+}
+
+enum UnitSystem {
+  metric
+  imperial
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String?
+  role         UserRole   @default(owner)
+  unitSystem   UnitSystem @default(imperial)
+
+  gardens   Garden[]
+  seasons   Season[]
+  plants    Plant[]
+  families  PlantFamily[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([deletedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Plant knowledge base (global by default; ownerId set for custom entries)
+// ---------------------------------------------------------------------------
+
+enum PlantType {
+  vegetable
+  fruit
+  herb
+  flower
+  cover_crop
+}
+
+enum SunRequirement {
+  full_sun
+  partial_sun
+  partial_shade
+  full_shade
+}
+
+enum WaterRequirement {
+  low
+  medium
+  high
+}
+
+enum FeederType {
+  heavy
+  medium
+  light
+  fixer
+}
+
+enum CompanionRelation {
+  companion
+  antagonist
+}
+
+model PlantFamily {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  // Rotation operates at the family level; same group => don't follow itself.
+  rotationGroup String?
+  source      String?
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id])
+
+  plants Plant[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([deletedAt])
+}
+
+model Plant {
+  id             String           @id @default(cuid())
+  commonName     String
+  scientificName String?
+  slug           String           @unique
+  type           PlantType
+  sun            SunRequirement?
+  water          WaterRequirement?
+  feederType     FeederType?
+
+  // Explicit units: spacing stored in millimetres.
+  spacingMm        Int?
+  rowSpacingMm     Int?
+  daysToMaturityMin Int?
+  daysToMaturityMax Int?
+
+  soilNotes      String?
+  growingTips    String?
+  commonMistakes String?
+  // Source / attribution so a reader can judge reliability.
+  source         String?
+
+  familyId String?
+  family   PlantFamily? @relation(fields: [familyId], references: [id])
+
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id])
+
+  // Companion relationships (directional rows; seed both directions).
+  companionsFrom CompanionLink[] @relation("CompanionFrom")
+  companionsTo   CompanionLink[] @relation("CompanionTo")
+
+  plantings PlantingRecord[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([type])
+  @@index([familyId])
+  @@index([deletedAt])
+}
+
+model CompanionLink {
+  id       String            @id @default(cuid())
+  plantAId String
+  plantBId String
+  relation CompanionRelation
+  reason   String?
+  source   String?
+
+  plantA Plant @relation("CompanionFrom", fields: [plantAId], references: [id], onDelete: Cascade)
+  plantB Plant @relation("CompanionTo", fields: [plantBId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([plantAId, plantBId, relation])
+  @@index([plantAId])
+  @@index([plantBId])
+}
+
+// ---------------------------------------------------------------------------
+// Physical spaces
+// ---------------------------------------------------------------------------
+
+enum BedType {
+  raised_bed
+  in_ground
+  container
+  greenhouse
+}
+
+model Garden {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Stored for later weather/frost features (Phase 1+).
+  latitude     Float?
+  longitude    Float?
+  hardinessZone String? // user override allowed
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  beds Bed[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // archive
+
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model Bed {
+  id       String  @id @default(cuid())
+  name     String
+  bedType  BedType @default(raised_bed)
+  location String?
+  soilType String?
+
+  // Explicit units: dimensions in millimetres, area in square metres.
+  lengthMm Int?
+  widthMm  Int?
+  areaSqM  Float?
+
+  gardenId String
+  garden   Garden @relation(fields: [gardenId], references: [id])
+
+  plantings  PlantingRecord[]
+  amendments SoilAmendment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // archive
+
+  @@index([gardenId])
+  @@index([deletedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Seasons (first-class) & history
+// ---------------------------------------------------------------------------
+
+enum SeasonType {
+  spring
+  summer
+  fall
+  winter
+}
+
+model Season {
+  id        String     @id @default(cuid())
+  name      String
+  seasonType SeasonType
+  year      Int
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean    @default(false)
+  notes     String?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  plantings  PlantingRecord[]
+  amendments SoilAmendment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([ownerId])
+  @@index([year])
+  @@index([deletedAt])
+}
+
+enum PlantingStatus {
+  planned
+  planted
+  harvested
+  removed
+}
+
+model PlantingRecord {
+  id       String         @id @default(cuid())
+  quantity Int            @default(1)
+  status   PlantingStatus @default(planned)
+
+  // Plan vs. actual: planned dates vs. the dates things really happened.
+  plannedPlantDate   DateTime?
+  plannedHarvestDate DateTime?
+  plantedOn          DateTime?
+  harvestedOn        DateTime?
+
+  notes String?
+
+  bedId    String
+  bed      Bed    @relation(fields: [bedId], references: [id])
+  plantId  String
+  plant    Plant  @relation(fields: [plantId], references: [id])
+  seasonId String
+  season   Season @relation(fields: [seasonId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([bedId])
+  @@index([plantId])
+  @@index([seasonId])
+  @@index([deletedAt])
+}
+
+model SoilAmendment {
+  id        String   @id @default(cuid())
+  name      String
+  appliedOn DateTime @default(now())
+
+  // Explicit units: free amount + unit string (e.g. 2 "kg", 1 "cu_ft").
+  amount     Float?
+  amountUnit String?
+  notes      String?
+
+  bedId    String
+  bed      Bed     @relation(fields: [bedId], references: [id])
+  seasonId String?
+  season   Season? @relation(fields: [seasonId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([bedId])
+  @@index([seasonId])
+  @@index([deletedAt])
+}
