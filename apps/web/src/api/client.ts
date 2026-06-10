@@ -326,6 +326,29 @@ export interface SeasonInput {
   isActive?: boolean;
 }
 
+export interface PlantRecommendation {
+  plantId: string;
+  name: string;
+  reason: string;
+}
+
+export interface BedRecommendations {
+  bedId: string;
+  seasonId: string;
+  zone: string | null;
+  recommendations: PlantRecommendation[];
+}
+
+export interface AmendmentInput {
+  bedId: string;
+  name: string;
+  appliedOn?: string;
+  amount?: number;
+  amountUnit?: string;
+  seasonId?: string;
+  notes?: string;
+}
+
 export const api = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {
@@ -418,6 +441,17 @@ export const api = {
   },
   createSeason(input: SeasonInput) {
     return request<Season>('/api/seasons', { method: 'POST', body: JSON.stringify(input) });
+  },
+  getBedRecommendations(bedId: string, seasonId: string) {
+    return request<BedRecommendations>(
+      `/api/beds/${bedId}/recommendations?seasonId=${encodeURIComponent(seasonId)}`,
+    );
+  },
+  createAmendment(input: AmendmentInput) {
+    return request<Amendment>('/api/amendments', { method: 'POST', body: JSON.stringify(input) });
+  },
+  exportData() {
+    return request<Record<string, unknown>>('/api/export');
   },
   getZone() {
     return request<AccountLocation>('/api/zone');

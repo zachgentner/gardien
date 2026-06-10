@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { AuthUser } from '@gardien/shared';
+import { api, ApiRequestError } from '../api/client';
 import { LocationZone } from './LocationZone';
 
 function titleCase(value: string): string {
@@ -28,7 +30,55 @@ export function Settings({ user }: { user: AuthUser }) {
       </section>
 
       <LocationZone />
+
+      <DataCard />
     </div>
+  );
+}
+
+/** Export everything in the account as JSON — "own your data". */
+function DataCard() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const exportData = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await api.exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gardien-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : 'Export failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section aria-labelledby="data-heading" className="card">
+      <h3 id="data-heading">Your data</h3>
+      <p className="muted">
+        Download everything in your account — gardens, beds, seasons, plantings, and amendments —
+        as a JSON file. Own your data; nothing is locked in.
+      </p>
+      {error && (
+        <p className="form__error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="button" onClick={exportData} disabled={busy}>
+        {busy ? 'Exporting…' : 'Export data (JSON)'}
+      </button>
+      <p className="muted settings-note">Importing a previous export will arrive in a follow-up.</p>
+    </section>
   );
 }
 

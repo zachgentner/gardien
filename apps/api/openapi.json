@@ -9693,6 +9693,31 @@
           }
         }
       }
+    },
+    "/api/export/": {
+      "get": {
+        "summary": "Export all of the account’s data as JSON",
+        "tags": [
+          "data"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -9737,6 +9762,10 @@
     {
       "name": "amendments",
       "description": "Soil amendments"
+    },
+    {
+      "name": "data",
+      "description": "Data export / import"
     }
   ]
 }
