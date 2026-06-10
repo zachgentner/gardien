@@ -16,6 +16,7 @@ import {
   type BedDetail,
   type BedPlanting,
   type Season,
+  type PlantRecommendation,
 } from '../api/client';
 
 const BED_TYPES: { value: BedType; label: string }[] = [
@@ -120,6 +121,7 @@ export function GardenManager({ unitSystem }: { unitSystem: string }) {
             lengthUnit={lengthUnit}
             lengthLabel={lengthLabel}
             seasonName={seasonName}
+            seasons={seasons}
           />
         </>
       )}
@@ -306,12 +308,14 @@ function BedSection({
   lengthUnit,
   lengthLabel,
   seasonName,
+  seasons,
 }: {
   garden: Garden;
   system: UnitSystem;
   lengthUnit: LengthUnit;
   lengthLabel: string;
   seasonName: (id: string | null) => string;
+  seasons: Season[];
 }) {
   const [beds, setBeds] = useState<Bed[]>([]);
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null);
@@ -395,6 +399,7 @@ function BedSection({
           lengthUnit={lengthUnit}
           lengthLabel={lengthLabel}
           seasonName={seasonName}
+          seasons={seasons}
           onChanged={async () => {
             await load();
           }}
@@ -552,6 +557,7 @@ function BedDetailPanel({
   lengthUnit,
   lengthLabel,
   seasonName,
+  seasons,
   onChanged,
   onArchived,
 }: {
@@ -560,6 +566,7 @@ function BedDetailPanel({
   lengthUnit: LengthUnit;
   lengthLabel: string;
   seasonName: (id: string | null) => string;
+  seasons: Season[];
   onChanged: () => Promise<void> | void;
   onArchived: () => Promise<void> | void;
 }) {
@@ -649,6 +656,8 @@ function BedDetailPanel({
             empty="No past plantings yet."
           />
 
+          <Recommendations bedId={bed.id} seasons={seasons} seasonName={seasonName} />
+
           <section>
             <h5>Soil amendments</h5>
             {detail.amendments.length === 0 ? (
@@ -672,10 +681,176 @@ function BedDetailPanel({
                 ))}
               </ul>
             )}
+            <AmendmentForm bedId={bed.id} seasons={seasons} onAdded={load} />
           </section>
         </>
       ) : null}
     </article>
+  );
+}
+
+/** "What to plant here next", from the bed's rotation history (Phase 5). */
+function Recommendations({
+  bedId,
+  seasons,
+  seasonName,
+}: {
+  bedId: string;
+  seasons: Season[];
+  seasonName: (id: string | null) => string;
+}) {
+  const seasonId = seasons.find((s) => s.isActive)?.id ?? seasons[0]?.id ?? '';
+  const [recs, setRecs] = useState<PlantRecommendation[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!seasonId) {
+      setRecs([]);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getBedRecommendations(bedId, seasonId)
+      .then((r) => !cancelled && setRecs(r.recommendations))
+      .catch(
+        (err) =>
+          !cancelled &&
+          setError(err instanceof ApiRequestError ? err.message : 'Could not load recommendations.'),
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [bedId, seasonId]);
+
+  if (!seasonId) return null;
+
+  return (
+    <section>
+      <h5>Recommended next{seasonName(seasonId) ? ` · ${seasonName(seasonId)}` : ''}</h5>
+      {error ? (
+        <p className="form__error" role="alert">
+          {error}
+        </p>
+      ) : recs == null ? (
+        <p className="muted">Loading…</p>
+      ) : recs.length === 0 ? (
+        <p className="muted">
+          No recommendations yet — set a hardiness zone, or this bed&apos;s recent history rules the
+          options out.
+        </p>
+      ) : (
+        <ul className="list">
+          {recs.map((r) => (
+            <li key={r.plantId} className="list__item">
+              <strong>{r.name}</strong>
+              <p className="muted">{r.reason}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** Record a soil amendment against the bed (Phase 5). */
+function AmendmentForm({
+  bedId,
+  seasons,
+  onAdded,
+}: {
+  bedId: string;
+  seasons: Season[];
+  onAdded: () => Promise<void> | void;
+}) {
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [amountUnit, setAmountUnit] = useState('');
+  const [seasonId, setSeasonId] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api.createAmendment({
+        bedId,
+        name: name.trim(),
+        amount: amount !== '' ? Number(amount) : undefined,
+        amountUnit: amountUnit.trim() || undefined,
+        seasonId: seasonId || undefined,
+      });
+      setName('');
+      setAmount('');
+      setAmountUnit('');
+      setSeasonId('');
+      await onAdded();
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : 'Could not record amendment.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <details className="manage-add">
+      <summary>Record an amendment</summary>
+      <form className="form form--wide" onSubmit={submit}>
+        <div className="form__row">
+          <label htmlFor="am-name">Amendment</label>
+          <input
+            id="am-name"
+            required
+            maxLength={120}
+            placeholder="e.g. Compost"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="form__row">
+          <label htmlFor="am-amount">Amount</label>
+          <input
+            id="am-amount"
+            type="number"
+            min={0}
+            step="0.01"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
+        <div className="form__row">
+          <label htmlFor="am-unit">Unit</label>
+          <input
+            id="am-unit"
+            maxLength={24}
+            placeholder="kg, cu ft…"
+            value={amountUnit}
+            onChange={(e) => setAmountUnit(e.target.value)}
+          />
+        </div>
+        <div className="form__row">
+          <label htmlFor="am-season">Season</label>
+          <select id="am-season" value={seasonId} onChange={(e) => setSeasonId(e.target.value)}>
+            <option value="">None</option>
+            {seasons.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {error && (
+          <p className="form__error form--wide__full" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="form--wide__full" disabled={busy || !name.trim()}>
+          {busy ? 'Saving…' : 'Record amendment'}
+        </button>
+      </form>
+    </details>
   );
 }
 
