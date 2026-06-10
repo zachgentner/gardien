@@ -884,6 +884,165 @@ details summary {
   background: var(--surface-2);
 }
 
+/* Garden planner ----------------------------------------------------------- */
+.planner__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.planboard {
+  margin-top: 0.5rem;
+}
+.planboard h4 {
+  margin: 1.25rem 0 0.6rem;
+  display: flex;
+  align-items: center;
+}
+
+input[type='checkbox'] {
+  width: auto;
+  min-height: 0;
+  accent-color: var(--green);
+}
+
+.conflicts {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+.conflict {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-2);
+  font-size: 0.92rem;
+}
+.conflict.is-warn {
+  border-left-color: var(--amber);
+  background: var(--amber-soft);
+}
+.conflict.is-good {
+  border-left-color: var(--fern);
+  background: var(--green-soft);
+}
+
+.capacity {
+  display: grid;
+  gap: 0.3rem;
+}
+.capacity__bar {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.capacity__fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.3s var(--ease);
+}
+.capacity__fill.is-over {
+  background: var(--danger);
+}
+
+/* Month calendar */
+.calendar {
+  display: grid;
+  gap: 2px;
+  overflow-x: auto;
+}
+.calendar__row {
+  display: grid;
+  grid-template-columns: 8rem repeat(12, 1fr);
+  gap: 2px;
+  align-items: center;
+  min-width: 28rem;
+}
+.calendar__head .cal-month {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.calendar__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 0.4rem;
+}
+.cal-cell {
+  height: 1.4rem;
+  border-radius: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.cal-cell.is-plant {
+  background: var(--green);
+  border-color: var(--green);
+}
+.cal-cell.is-harvest {
+  background: var(--amber);
+  border-color: var(--amber);
+}
+.cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.cal-key {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 3px;
+  display: inline-block;
+}
+.cal-key.is-plant {
+  background: var(--green);
+}
+.cal-key.is-harvest {
+  background: var(--amber);
+  margin-left: 0.75rem;
+}
+
+.plan-rows {
+  margin-top: 1rem;
+}
+.plan-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.plan-row__win {
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+.assign-form {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Motion ------------------------------------------------------------------- */
 @keyframes rise {
   from {

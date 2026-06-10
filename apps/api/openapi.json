@@ -3239,7 +3239,11 @@
                           "plantId",
                           "name",
                           "quantity",
-                          "status"
+                          "status",
+                          "plantStartMonth",
+                          "plantEndMonth",
+                          "harvestStartMonth",
+                          "harvestEndMonth"
                         ],
                         "properties": {
                           "plantingId": {
@@ -3279,6 +3283,46 @@
                                 "enum": [
                                   "removed"
                                 ]
+                              }
+                            ]
+                          },
+                          "plantStartMonth": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "plantEndMonth": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "harvestStartMonth": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "harvestEndMonth": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
                               }
                             ]
                           }

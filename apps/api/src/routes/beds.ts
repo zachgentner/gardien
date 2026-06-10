@@ -11,6 +11,7 @@ import {
 } from '../domain/companion.js';
 import { checkRotation, type BedHistoryEntry } from '../domain/rotation.js';
 import { evaluateCapacity, type SpacedPlanting } from '../domain/spacing.js';
+import { effectiveWindow, type PlantingWindow } from '../domain/planting.js';
 
 const SEASON_ORDER: Record<string, number> = { spring: 0, summer: 1, fall: 2, winter: 3 };
 
@@ -109,6 +110,12 @@ const PlanPlant = Type.Object({
   name: Type.String(),
   quantity: Type.Integer(),
   status: PlantingStatusEnum,
+  // Effective zone window (override beats curated); null when unsuitable. Drives
+  // the planner's month calendar.
+  plantStartMonth: Type.Union([Type.Integer(), Type.Null()]),
+  plantEndMonth: Type.Union([Type.Integer(), Type.Null()]),
+  harvestStartMonth: Type.Union([Type.Integer(), Type.Null()]),
+  harvestEndMonth: Type.Union([Type.Integer(), Type.Null()]),
 });
 
 const PairFinding = Type.Object({
@@ -347,18 +354,58 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       });
 
-      const plants: Static<typeof PlanPlant>[] = planRecords.map((p) => ({
-        plantingId: p.id,
-        plantId: p.plantId,
-        name: p.plant.commonName,
-        quantity: p.quantity,
-        status: p.status as PlantingStatus,
-      }));
-
-      // Distinct plants present, for companion pairing and zone suitability.
+      // Distinct plants present, for companion pairing, suitability, and windows.
       const refs = new Map<string, PlantRef>();
       for (const p of planRecords) refs.set(p.plant.id, { id: p.plant.id, name: p.plant.commonName });
       const plantIds = [...refs.keys()];
+
+      // Effective planting/harvest window per plant for the zone (a user override
+      // beats the curated window). Null when the zone has no window — this drives
+      // both the calendar bars and the suitability warnings below.
+      const windowByPlant = new Map<string, PlantingWindow | null>();
+      if (zone && plantIds.length > 0) {
+        const rows = await app.prisma.plantingWindow.findMany({
+          where: {
+            plantId: { in: plantIds },
+            zone,
+            deletedAt: null,
+            OR: [{ ownerId: null }, { ownerId: request.user.sub }],
+          },
+          select: {
+            plantId: true,
+            zone: true,
+            plantStartMonth: true,
+            plantEndMonth: true,
+            harvestStartMonth: true,
+            harvestEndMonth: true,
+            ownerId: true,
+          },
+        });
+        const byPlant = new Map<string, PlantingWindow[]>();
+        for (const r of rows) {
+          const list = byPlant.get(r.plantId) ?? [];
+          list.push(r);
+          byPlant.set(r.plantId, list);
+        }
+        for (const id of plantIds) {
+          windowByPlant.set(id, effectiveWindow(byPlant.get(id) ?? [], zone, request.user.sub));
+        }
+      }
+
+      const plants: Static<typeof PlanPlant>[] = planRecords.map((p) => {
+        const w = windowByPlant.get(p.plantId) ?? null;
+        return {
+          plantingId: p.id,
+          plantId: p.plantId,
+          name: p.plant.commonName,
+          quantity: p.quantity,
+          status: p.status as PlantingStatus,
+          plantStartMonth: w?.plantStartMonth ?? null,
+          plantEndMonth: w?.plantEndMonth ?? null,
+          harvestStartMonth: w?.harvestStartMonth ?? null,
+          harvestEndMonth: w?.harvestEndMonth ?? null,
+        };
+      });
 
       // Companion graph among the plants in the bed.
       const links =
@@ -450,17 +497,9 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
       }
 
       // Zone suitability: a plant with no planting window for the zone is risky.
-      let unsuitable: Static<typeof SuitabilityFinding>[] = [];
-      if (zone && plantIds.length > 0) {
-        const windows = await app.prisma.plantingWindow.findMany({
-          where: { plantId: { in: plantIds }, zone, deletedAt: null },
-          select: { plantId: true },
-        });
-        const ok = new Set(windows.map((w) => w.plantId));
-        unsuitable = refList
-          .filter((p) => !ok.has(p.id))
-          .map((p) => ({ plantName: p.name, zone }));
-      }
+      const unsuitable: Static<typeof SuitabilityFinding>[] = zone
+        ? refList.filter((p) => !windowByPlant.get(p.id)).map((p) => ({ plantName: p.name, zone }))
+        : [];
 
       const warningCount =
         antagonists.length + rotation.length + unsuitable.length + (capacity.over ? 1 : 0);
