@@ -4,7 +4,6 @@ import { api, ApiRequestError, getToken } from './api/client';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { LocationZone } from './components/LocationZone';
 import { PlantDirectory } from './components/PlantDirectory';
-import { GardenManager } from './components/GardenManager';
 
 export default function App() {
   const online = useOnlineStatus();
