@@ -419,3 +419,19 @@ model ZoneLookupCache {
   source        String   @default("phzmapi")
   fetchedAt     DateTime @default(now())
 }
+
+// ---------------------------------------------------------------------------
+// Weather-driven alerts (Phase 6)
+// ---------------------------------------------------------------------------
+
+/// Cached localized forecasts keyed by rounded "lat,lon", so we avoid re-hitting
+/// the weather API and keep serving (stale) forecasts when it is unavailable
+/// (graceful degradation). `days` holds the parsed daily forecast as JSON.
+model WeatherCache {
+  key       String   @id
+  latitude  Float
+  longitude Float
+  days      Json
+  source    String   @default("open-meteo")
+  fetchedAt DateTime @default(now())
+}

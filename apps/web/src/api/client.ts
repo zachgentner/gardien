@@ -349,6 +349,36 @@ export interface AmendmentInput {
   notes?: string;
 }
 
+export interface ForecastDay {
+  date: string;
+  tempMinC: number | null;
+  tempMaxC: number | null;
+  precipMm: number | null;
+}
+
+export interface FrostWarning {
+  date: string;
+  tempMinC: number;
+  severity: 'frost' | 'light-frost';
+}
+
+export interface PestWatch {
+  plantName: string;
+  name: string;
+  kind: 'pest' | 'disease';
+  management: string | null;
+}
+
+export interface WeatherAlerts {
+  located: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  source: 'api' | 'cache' | 'stale-cache' | null;
+  forecast: ForecastDay[];
+  frostWarnings: FrostWarning[];
+  pestWatch: PestWatch[];
+}
+
 export const api = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {
@@ -452,6 +482,9 @@ export const api = {
   },
   exportData() {
     return request<Record<string, unknown>>('/api/export');
+  },
+  getWeather() {
+    return request<WeatherAlerts>('/api/weather');
   },
   getZone() {
     return request<AccountLocation>('/api/zone');

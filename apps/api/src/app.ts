@@ -25,6 +25,7 @@ import { seasonRoutes } from './routes/seasons.js';
 import { plantingRoutes } from './routes/plantings.js';
 import { amendmentRoutes } from './routes/amendments.js';
 import { exportRoutes } from './routes/export.js';
+import { weatherRoutes } from './routes/weather.js';
 
 export interface BuildOptions {
   /** Skip the Prisma plugin (e.g. pure-logic tests that never touch the DB). */
@@ -72,6 +73,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
         { name: 'plantings', description: 'Planting records' },
         { name: 'amendments', description: 'Soil amendments' },
         { name: 'data', description: 'Data export / import' },
+        { name: 'weather', description: 'Weather-driven alerts' },
       ],
     },
   });
@@ -93,6 +95,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
   await app.register(plantingRoutes, { prefix: '/api/plantings' });
   await app.register(amendmentRoutes, { prefix: '/api/amendments' });
   await app.register(exportRoutes, { prefix: '/api/export' });
+  await app.register(weatherRoutes, { prefix: '/api/weather' });
 
   return app;
 }

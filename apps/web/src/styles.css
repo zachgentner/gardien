@@ -1043,6 +1043,66 @@ input[type='checkbox'] {
   border: 0;
 }
 
+/* Weather panel (Phase 6) -------------------------------------------------- */
+.frost-banner {
+  margin: 0 0 1rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-sm);
+  background: var(--amber-soft);
+  font-size: 0.92rem;
+}
+
+.forecast {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(3.2rem, 1fr);
+  gap: 0.4rem;
+  overflow-x: auto;
+}
+.forecast__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  text-align: center;
+}
+.forecast__day.is-frost {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+}
+.forecast__dow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.forecast__date {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.forecast__temp {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.2rem;
+}
+.forecast__max {
+  font-weight: 700;
+}
+.forecast__min {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 /* Motion ------------------------------------------------------------------- */
 @keyframes rise {
   from {
