@@ -287,6 +287,54 @@ async function main(): Promise<void> {
     });
   }
 
+  // A second bed so the directory shows more than one growing space.
+  const existingBedB = await prisma.bed.findFirst({ where: { gardenId: garden.id, name: 'Bed B' } });
+  if (!existingBedB) {
+    await prisma.bed.create({
+      data: {
+        gardenId: garden.id,
+        name: 'Bed B',
+        bedType: 'in_ground',
+        location: 'South fence',
+        lengthMm: 3000,
+        widthMm: 900,
+        areaSqM: 2.7,
+        soilType: 'Clay loam',
+      },
+    });
+  }
+
+  // A past season with a harvested planting, so each bed's detail view shows a
+  // non-empty planting history (current vs. past) out of the box.
+  const lastFall = await prisma.season.findFirst({
+    where: { ownerId: admin.id, year: year - 1, seasonType: 'fall' },
+  });
+  const pastSeason =
+    lastFall ??
+    (await prisma.season.create({
+      data: { ownerId: admin.id, name: `Fall ${year - 1}`, seasonType: 'fall', year: year - 1 },
+    }));
+
+  const broccoliId = plantBySlug.get('broccoli');
+  if (broccoliId) {
+    const existingPast = await prisma.plantingRecord.findFirst({
+      where: { bedId: bed.id, plantId: broccoliId, seasonId: pastSeason.id },
+    });
+    if (!existingPast) {
+      await prisma.plantingRecord.create({
+        data: {
+          bedId: bed.id,
+          plantId: broccoliId,
+          seasonId: pastSeason.id,
+          quantity: 3,
+          status: 'harvested',
+          plantedOn: new Date(year - 1, 7, 15),
+          harvestedOn: new Date(year - 1, 10, 1),
+        },
+      });
+    }
+  }
+
   console.log('Seed complete.');
 }
 

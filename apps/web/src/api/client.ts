@@ -55,7 +55,90 @@ export interface Garden {
   id: string;
   name: string;
   description: string | null;
+  latitude: number | null;
+  longitude: number | null;
   hardinessZone: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export type BedType = 'raised_bed' | 'in_ground' | 'container' | 'greenhouse';
+
+export interface Bed {
+  id: string;
+  name: string;
+  bedType: BedType;
+  location: string | null;
+  soilType: string | null;
+  // Canonical storage: millimetres for dimensions, square metres for area.
+  lengthMm: number | null;
+  widthMm: number | null;
+  areaSqM: number | null;
+  gardenId: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export type PlantingStatus = 'planned' | 'planted' | 'harvested' | 'removed';
+
+export interface BedPlanting {
+  id: string;
+  quantity: number;
+  status: PlantingStatus;
+  plannedPlantDate: string | null;
+  plannedHarvestDate: string | null;
+  plantedOn: string | null;
+  harvestedOn: string | null;
+  notes: string | null;
+  seasonId: string;
+  plantId: string;
+  plantName: string;
+  plantSlug: string;
+  plantType: string;
+}
+
+export interface BedAmendment {
+  id: string;
+  name: string;
+  appliedOn: string;
+  amount: number | null;
+  amountUnit: string | null;
+  notes: string | null;
+  seasonId: string | null;
+}
+
+export interface BedDetail extends Bed {
+  current: BedPlanting[];
+  history: BedPlanting[];
+  amendments: BedAmendment[];
+}
+
+export interface Season {
+  id: string;
+  name: string;
+  seasonType: string;
+  year: number;
+  startDate: string | null;
+  endDate: string | null;
+  isActive: boolean;
+  notes: string | null;
+}
+
+export interface GardenInput {
+  name: string;
+  description?: string;
+  hardinessZone?: string;
+}
+
+export interface BedInput {
+  name: string;
+  bedType?: BedType;
+  location?: string;
+  soilType?: string;
+  lengthMm?: number;
+  widthMm?: number;
 }
 
 export interface AccountLocation {
@@ -165,8 +248,37 @@ export const api = {
   listGardens() {
     return request<Garden[]>('/api/gardens');
   },
-  createGarden(input: { name: string; description?: string; hardinessZone?: string }) {
+  createGarden(input: GardenInput) {
     return request<Garden>('/api/gardens', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateGarden(id: string, input: Partial<GardenInput>) {
+    return request<Garden>(`/api/gardens/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
+  },
+  archiveGarden(id: string) {
+    return request<Garden>(`/api/gardens/${id}`, { method: 'DELETE' });
+  },
+  listBeds(gardenId: string, includeArchived = false) {
+    const qs = new URLSearchParams({ gardenId });
+    if (includeArchived) qs.set('includeArchived', 'true');
+    return request<Bed[]>(`/api/beds?${qs.toString()}`);
+  },
+  createBed(input: BedInput & { gardenId: string }) {
+    return request<Bed>('/api/beds', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateBed(id: string, input: Partial<BedInput>) {
+    return request<Bed>(`/api/beds/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
+  archiveBed(id: string) {
+    return request<Bed>(`/api/beds/${id}`, { method: 'DELETE' });
+  },
+  getBedDetail(id: string) {
+    return request<BedDetail>(`/api/beds/${id}/detail`);
+  },
+  listSeasons() {
+    return request<Season[]>('/api/seasons');
   },
   getZone() {
     return request<AccountLocation>('/api/zone');

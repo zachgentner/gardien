@@ -118,12 +118,20 @@ The knowledge base that powers planning.
       _12 plants, families, companions, zone 7b/8a windows, pests/diseases._
 
 ### Phase 3 — Garden & Bed Management
-- [ ] Create gardens and define how much growing space is available.
-- [ ] Add beds/areas (raised beds, tillable areas, containers) with names,
+- [x] Create gardens and define how much growing space is available.
+      _`/api/gardens` CRUD; a garden carries an optional zone override and beds._
+- [x] Add beds/areas (raised beds, tillable areas, containers) with names,
       dimensions (**with units**), and locations.
-- [ ] View each bed's current plantings, past planting history, and soil
-      amendments.
-- [ ] **Archive (soft-delete) beds** instead of destroying their history.
+      _`/api/beds` CRUD; dimensions entered in the user's unit system and stored
+      canonically in millimetres, area derived in m². Bed type, location, and
+      soil captured too._
+- [x] View each bed's current plantings, past planting history, and soil
+      amendments. _`GET /api/beds/:id/detail` returns the bed plus its current
+      vs. past plantings (split by status) and amendments; surfaced in the
+      "Gardens & beds" panel._
+- [x] **Archive (soft-delete) beds** instead of destroying their history.
+      _`DELETE /api/beds/:id` and `/api/gardens/:id` set `deletedAt`; lists hide
+      archived rows unless `includeArchived` is passed._
 
 ### Phase 4 — Garden Planning
 - [ ] Plan a season: assign plants to beds based on available space.
@@ -191,10 +199,13 @@ Sensor metrics the IoT layer will collect:
 
 ## Status
 
-**Phase 0 (Foundation) is in place** — a deployable single-user PWA skeleton:
-monorepo, documented API contract, PWA shell, full core data model, auth
-scaffolding, CI with tests, seed data, backups, and an accessibility baseline.
-See [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
+**Phases 0–3 are in place.** Phase 0 laid a deployable single-user PWA skeleton
+(monorepo, documented API contract, PWA shell, full core data model, auth
+scaffolding, CI with tests, seed data, backups, accessibility baseline). Phase 1
+added location & USDA hardiness zone; Phase 2 the plant directory; Phase 3
+garden & bed management — gardens and beds with unit-aware dimensions, a
+bed-detail view of current plantings, planting history, and soil amendments, and
+soft-delete archiving throughout. See [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
 
-The current focus is Phases 1–5 (location/zone, plant directory, garden &
-bed management, planning, and history/recommendations) as a single-user PWA.
+The next focus is Phase 4 (garden planning) and Phase 5 (history &
+recommendations), still as a single-user PWA.

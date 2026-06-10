@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@gardien/shared';
-import { api, ApiRequestError, getToken, type Garden } from './api/client';
+import { api, ApiRequestError, getToken } from './api/client';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { LocationZone } from './components/LocationZone';
 import { PlantDirectory } from './components/PlantDirectory';
@@ -124,62 +124,25 @@ function LoginForm({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
 }
 
 function Dashboard({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
-  const [gardens, setGardens] = useState<Garden[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(() => {
-    setLoading(true);
-    api
-      .listGardens()
-      .then(setGardens)
-      .catch((err) =>
-        setError(err instanceof ApiRequestError ? err.message : 'Could not load gardens.'),
-      )
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(refresh, [refresh]);
-
   return (
     <div className="stack">
       <section aria-labelledby="dash-heading" className="card">
-      <div className="card__header">
-        <h2 id="dash-heading">Welcome, {user.displayName ?? user.email}</h2>
-        <button
-          type="button"
-          className="button--ghost"
-          onClick={() => {
-            api.logout();
-            onLogout();
-          }}
-        >
-          Sign out
-        </button>
-      </div>
-
-      <h3>Your gardens</h3>
-      {loading ? (
-        <p>Loading gardens…</p>
-      ) : error ? (
-        <p className="form__error" role="alert">
-          {error}
-        </p>
-      ) : gardens.length === 0 ? (
-        <p>No gardens yet. The seed script creates a demo garden for local development.</p>
-      ) : (
-        <ul className="list">
-          {gardens.map((g) => (
-            <li key={g.id} className="list__item">
-              <strong>{g.name}</strong>
-              {g.hardinessZone && <span className="badge">Zone {g.hardinessZone}</span>}
-              {g.description && <p>{g.description}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
+        <div className="card__header">
+          <h2 id="dash-heading">Welcome, {user.displayName ?? user.email}</h2>
+          <button
+            type="button"
+            className="button--ghost"
+            onClick={() => {
+              api.logout();
+              onLogout();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </section>
 
+      <GardenManager unitSystem={user.unitSystem} />
       <LocationZone />
       <PlantDirectory />
     </div>

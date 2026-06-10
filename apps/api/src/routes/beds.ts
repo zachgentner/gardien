@@ -1,6 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { IdParam, Timestamps, errorResponses } from '../schemas/common.js';
+import { IdParam, Timestamps, NullableDateTime, DateTime, errorResponses } from '../schemas/common.js';
+import { deriveAreaSqM, partitionPlantings, type PlantingStatus } from '../domain/bed.js';
 
 const BedTypeEnum = Type.Union([
   Type.Literal('raised_bed'),
@@ -40,11 +41,52 @@ const ListBedsQuery = Type.Object({
   includeArchived: Type.Optional(Type.Boolean({ default: false })),
 });
 
-/** Derive area (m^2) from millimetre dimensions when both are present. */
-function deriveAreaSqM(lengthMm?: number | null, widthMm?: number | null): number | undefined {
-  if (lengthMm == null || widthMm == null) return undefined;
-  return (lengthMm / 1000) * (widthMm / 1000);
-}
+const PlantingStatusEnum = Type.Union([
+  Type.Literal('planned'),
+  Type.Literal('planted'),
+  Type.Literal('harvested'),
+  Type.Literal('removed'),
+]);
+
+/** A planting in the bed-detail view, enriched with its plant's name. */
+const BedPlanting = Type.Object({
+  id: Type.String(),
+  quantity: Type.Integer(),
+  status: PlantingStatusEnum,
+  plannedPlantDate: NullableDateTime,
+  plannedHarvestDate: NullableDateTime,
+  plantedOn: NullableDateTime,
+  harvestedOn: NullableDateTime,
+  notes: Type.Union([Type.String(), Type.Null()]),
+  seasonId: Type.String(),
+  plantId: Type.String(),
+  plantName: Type.String(),
+  plantSlug: Type.String(),
+  plantType: Type.String(),
+});
+
+const BedAmendment = Type.Object({
+  id: Type.String(),
+  name: Type.String(),
+  appliedOn: DateTime,
+  amount: Type.Union([Type.Number(), Type.Null()]),
+  amountUnit: Type.Union([Type.String(), Type.Null()]),
+  notes: Type.Union([Type.String(), Type.Null()]),
+  seasonId: Type.Union([Type.String(), Type.Null()]),
+});
+
+/**
+ * A bed plus its current plantings, past planting history, and soil amendments
+ * — the single read that backs the Phase 3 bed-detail view.
+ */
+const BedDetail = Type.Intersect([
+  Bed,
+  Type.Object({
+    current: Type.Array(BedPlanting),
+    history: Type.Array(BedPlanting),
+    amendments: Type.Array(BedAmendment),
+  }),
+]);
 
 export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.addHook('onRequest', app.authenticate);
@@ -119,6 +161,69 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
       });
       if (!bed) return reply.notFound('Bed not found.');
       return bed;
+    },
+  );
+
+  app.get(
+    '/:id/detail',
+    {
+      schema: {
+        tags: ['beds'],
+        summary: "A bed with its current plantings, planting history, and amendments",
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        response: { 200: BedDetail, ...errorResponses },
+      },
+    },
+    async (request, reply) => {
+      const bed = await app.prisma.bed.findFirst({
+        where: { id: request.params.id, garden: { ownerId: request.user.sub } },
+        include: {
+          plantings: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: 'desc' },
+            include: { plant: { select: { commonName: true, slug: true, type: true } } },
+          },
+          amendments: {
+            where: { deletedAt: null },
+            orderBy: { appliedOn: 'desc' },
+          },
+        },
+      });
+      if (!bed) return reply.notFound('Bed not found.');
+
+      const { plantings, amendments, ...bedFields } = bed;
+      const enriched = plantings.map((p) => ({
+        id: p.id,
+        quantity: p.quantity,
+        status: p.status as PlantingStatus,
+        plannedPlantDate: p.plannedPlantDate,
+        plannedHarvestDate: p.plannedHarvestDate,
+        plantedOn: p.plantedOn,
+        harvestedOn: p.harvestedOn,
+        notes: p.notes,
+        seasonId: p.seasonId,
+        plantId: p.plantId,
+        plantName: p.plant.commonName,
+        plantSlug: p.plant.slug,
+        plantType: p.plant.type,
+      }));
+      const { current, history } = partitionPlantings(enriched);
+
+      return {
+        ...bedFields,
+        current,
+        history,
+        amendments: amendments.map((a) => ({
+          id: a.id,
+          name: a.name,
+          appliedOn: a.appliedOn,
+          amount: a.amount,
+          amountUnit: a.amountUnit,
+          notes: a.notes,
+          seasonId: a.seasonId,
+        })),
+      };
     },
   );
 

@@ -357,6 +357,70 @@ select {
   color: var(--green-dark);
 }
 
+/* --- Garden & bed management (Phase 3) --- */
+.button--danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--border);
+}
+
+.manage-add {
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+}
+
+.manage-add summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+}
+
+.manage-add .form {
+  margin-top: 0.75rem;
+}
+
+.manage-actions {
+  margin: 0.75rem 0 0.5rem;
+}
+
+/* Wider forms (beds) lay fields out in a responsive grid. */
+.form--wide {
+  max-width: none;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  align-items: end;
+}
+
+.form--wide__full {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.bed-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.bed-section h4 {
+  margin: 0 0 0.75rem;
+}
+
+.bed-detail {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  background: rgba(46, 125, 50, 0.04);
+}
+
+.bed-detail h5 {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
