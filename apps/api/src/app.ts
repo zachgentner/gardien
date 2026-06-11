@@ -6,6 +6,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
@@ -44,6 +45,10 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
 
   await app.register(sensible);
   await app.register(cors, { origin: config.corsOrigin, credentials: true });
+
+  // Operational hardening (Phase 8): a global request rate limit, with tighter
+  // per-route limits on auth (see routes/auth.ts) to blunt brute-force.
+  await app.register(rateLimit, { max: config.rateLimitMax, timeWindow: '1 minute' });
 
   // Shared schemas referenced by route response definitions.
   app.addSchema(ErrorSchema);

@@ -220,10 +220,17 @@ contract below._
 
 ### Phase 8 — Public / Commercial (SaaS) — *Future, optional*
 A path to opening Gardien up beyond personal use.
-- [ ] Multi-user tenancy with per-account data isolation.
-- [ ] Account onboarding, roles/permissions.
-- [ ] Billing, plans/tiers, and usage limits.
-- [ ] Operational concerns: monitoring, backups, rate limiting, support.
+- [~] Multi-user tenancy with per-account data isolation.
+      _Per-account isolation is already enforced — every query is scoped to the
+      owning user. An org/team tenancy model (vs. user-as-tenant) is a product
+      decision still open._
+- [~] Account onboarding, roles/permissions.
+      _Open registration + an `owner`/`member` role exist from Phase 0; richer
+      role enforcement is pending the tenancy decision._
+- [ ] Billing, plans/tiers, and usage limits. _Needs a payment provider decision._
+- [~] Operational concerns: monitoring, backups, rate limiting, support.
+      _Backups (Phase 0) and **rate limiting** are in place (global per-IP limit +
+      stricter auth limits); monitoring/support remain._
 
 ---
 

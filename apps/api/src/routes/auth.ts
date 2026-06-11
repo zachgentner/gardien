@@ -28,9 +28,13 @@ const AuthResponse = Type.Object({
 const BCRYPT_ROUNDS = 10;
 
 export const authRoutes: FastifyPluginAsyncTypebox = async (app) => {
+  // Tighter limits on credential endpoints to blunt brute-force / abuse.
+  const authRateLimit = { rateLimit: { max: 10, timeWindow: '1 minute' } };
+
   app.post(
     '/register',
     {
+      config: authRateLimit,
       schema: {
         tags: ['auth'],
         summary: 'Register an account',
@@ -68,6 +72,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.post(
     '/login',
     {
+      config: authRateLimit,
       schema: {
         tags: ['auth'],
         summary: 'Log in and receive a JWT',
