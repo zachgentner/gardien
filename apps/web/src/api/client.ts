@@ -109,10 +109,18 @@ export interface BedAmendment {
   seasonId: string | null;
 }
 
+export interface SensorSnapshot {
+  metric: string;
+  value: number;
+  unit: string;
+  recordedAt: string;
+}
+
 export interface BedDetail extends Bed {
   current: BedPlanting[];
   history: BedPlanting[];
   amendments: BedAmendment[];
+  sensors: SensorSnapshot[];
 }
 
 export interface Season {

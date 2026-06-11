@@ -88,9 +88,17 @@ const BedAmendment = Type.Object({
   seasonId: Type.Union([Type.String(), Type.Null()]),
 });
 
+/** Latest reading per metric from devices assigned to the bed (Phase 7 tie-in). */
+const SensorSnapshot = Type.Object({
+  metric: Type.String(),
+  value: Type.Number(),
+  unit: Type.String(),
+  recordedAt: DateTime,
+});
+
 /**
- * A bed plus its current plantings, past planting history, and soil amendments
- * — the single read that backs the Phase 3 bed-detail view.
+ * A bed plus its current plantings, past planting history, soil amendments, and
+ * a live sensor snapshot — the single read that backs the bed-detail view.
  */
 const BedDetail = Type.Intersect([
   Bed,
@@ -98,6 +106,7 @@ const BedDetail = Type.Intersect([
     current: Type.Array(BedPlanting),
     history: Type.Array(BedPlanting),
     amendments: Type.Array(BedAmendment),
+    sensors: Type.Array(SensorSnapshot),
   }),
 ]);
 
@@ -297,6 +306,16 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
       }));
       const { current, history } = partitionPlantings(enriched);
 
+      // Live conditions: the latest reading per metric from devices on this bed.
+      const recent = await app.prisma.sensorReading.findMany({
+        where: { device: { bedId: bed.id, deletedAt: null } },
+        orderBy: { recordedAt: 'desc' },
+        take: 50,
+        select: { metric: true, value: true, unit: true, recordedAt: true },
+      });
+      const latestByMetric = new Map<string, (typeof recent)[number]>();
+      for (const r of recent) if (!latestByMetric.has(r.metric)) latestByMetric.set(r.metric, r);
+
       return {
         ...bedFields,
         current,
@@ -310,6 +329,7 @@ export const bedRoutes: FastifyPluginAsyncTypebox = async (app) => {
           notes: a.notes,
           seasonId: a.seasonId,
         })),
+        sensors: [...latestByMetric.values()],
       };
     },
   );

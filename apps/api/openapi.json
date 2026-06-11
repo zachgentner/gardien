@@ -2809,7 +2809,8 @@
                       "required": [
                         "current",
                         "history",
-                        "amendments"
+                        "amendments",
+                        "sensors"
                       ],
                       "properties": {
                         "current": {
@@ -3127,6 +3128,33 @@
                                     "type": "null"
                                   }
                                 ]
+                              }
+                            }
+                          }
+                        },
+                        "sensors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "metric",
+                              "value",
+                              "unit",
+                              "recordedAt"
+                            ],
+                            "properties": {
+                              "metric": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "type": "number"
+                              },
+                              "unit": {
+                                "type": "string"
+                              },
+                              "recordedAt": {
+                                "type": "string",
+                                "format": "date-time"
                               }
                             }
                           }
