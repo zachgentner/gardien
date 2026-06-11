@@ -21,6 +21,7 @@ export function Settings({ user }: { user: AuthUser }) {
           <Field label="Email" value={user.email} />
           <Field label="Role" value={titleCase(user.role)} />
           <Field label="Units" value={titleCase(user.unitSystem)} />
+          <Field label="Plan" value={titleCase(user.plan)} />
         </dl>
         <p className="muted settings-note">
           Measurement units are set per account and applied across beds and the plant

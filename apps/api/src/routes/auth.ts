@@ -18,6 +18,7 @@ const UserPublic = Type.Object({
   displayName: Type.Union([Type.String(), Type.Null()]),
   role: Type.String(),
   unitSystem: Type.String(),
+  plan: Type.String(),
 });
 
 const AuthResponse = Type.Object({
@@ -118,6 +119,7 @@ function toPublic(user: {
   displayName: string | null;
   role: string;
   unitSystem: string;
+  plan: string;
 }) {
   return {
     id: user.id,
@@ -125,5 +127,6 @@ function toPublic(user: {
     displayName: user.displayName,
     role: user.role,
     unitSystem: user.unitSystem,
+    plan: user.plan,
   };
 }

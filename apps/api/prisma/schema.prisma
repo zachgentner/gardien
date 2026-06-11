@@ -35,6 +35,13 @@ enum UnitSystem {
   imperial
 }
 
+/// Subscription plan (Phase 8). Drives usage limits; billing integration is a
+/// later, provider-dependent step. Each user is their own isolated tenant.
+enum Plan {
+  free
+  pro
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -42,6 +49,7 @@ model User {
   displayName  String?
   role         UserRole   @default(owner)
   unitSystem   UnitSystem @default(imperial)
+  plan         Plan       @default(free)
 
   // Location & hardiness zone (Phase 1). The zone drives planting windows and
   // suitability. Derived from ZIP, but always overridable (microclimates).

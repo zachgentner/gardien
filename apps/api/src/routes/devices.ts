@@ -4,6 +4,7 @@ import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import type { FastifyRequest } from 'fastify';
 import { IdParam, Timestamps, DateTime, NullableDateTime, errorResponses } from '../schemas/common.js';
 import { decideIrrigation } from '../domain/irrigation.js';
+import { withinLimit, planLimit, type Plan } from '../domain/plan.js';
 
 const SensorMetricEnum = Type.Union([
   Type.Literal('air_temp'),
@@ -190,6 +191,16 @@ export const deviceRoutes: FastifyPluginAsyncTypebox = async (app) => {
       if (request.body.bedId) {
         const bed = await ownsBed(request.body.bedId, request.user.sub);
         if (!bed) return reply.notFound('Bed not found.');
+      }
+      const [user, count] = await Promise.all([
+        app.prisma.user.findUnique({ where: { id: request.user.sub }, select: { plan: true } }),
+        app.prisma.device.count({ where: { ownerId: request.user.sub, deletedAt: null } }),
+      ]);
+      const plan = (user?.plan ?? 'free') as Plan;
+      if (!withinLimit(plan, 'devices', count)) {
+        return reply.forbidden(
+          `Your plan allows up to ${planLimit(plan, 'devices')} devices. Upgrade to add more.`,
+        );
       }
       const secret = newSecret();
       const device = await app.prisma.device.create({

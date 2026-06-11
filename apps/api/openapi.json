@@ -203,7 +203,8 @@
                         "email",
                         "displayName",
                         "role",
-                        "unitSystem"
+                        "unitSystem",
+                        "plan"
                       ],
                       "properties": {
                         "id": {
@@ -226,6 +227,9 @@
                           "type": "string"
                         },
                         "unitSystem": {
+                          "type": "string"
+                        },
+                        "plan": {
                           "type": "string"
                         }
                       }
@@ -301,7 +305,8 @@
                         "email",
                         "displayName",
                         "role",
-                        "unitSystem"
+                        "unitSystem",
+                        "plan"
                       ],
                       "properties": {
                         "id": {
@@ -324,6 +329,9 @@
                           "type": "string"
                         },
                         "unitSystem": {
+                          "type": "string"
+                        },
+                        "plan": {
                           "type": "string"
                         }
                       }
@@ -369,7 +377,8 @@
                     "email",
                     "displayName",
                     "role",
-                    "unitSystem"
+                    "unitSystem",
+                    "plan"
                   ],
                   "properties": {
                     "id": {
@@ -392,6 +401,9 @@
                       "type": "string"
                     },
                     "unitSystem": {
+                      "type": "string"
+                    },
+                    "plan": {
                       "type": "string"
                     }
                   }

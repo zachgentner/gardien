@@ -227,7 +227,10 @@ A path to opening Gardien up beyond personal use.
 - [~] Account onboarding, roles/permissions.
       _Open registration + an `owner`/`member` role exist from Phase 0; richer
       role enforcement is pending the tenancy decision._
-- [ ] Billing, plans/tiers, and usage limits. _Needs a payment provider decision._
+- [~] Billing, plans/tiers, and usage limits.
+      _Plans (`free`/`pro`) and **usage limits** are enforced (e.g. free caps
+      gardens/devices); the plan shows in Settings. Actual **billing/charging**
+      still needs a payment-provider decision._
 - [~] Operational concerns: monitoring, backups, rate limiting, support.
       _Backups (Phase 0) and **rate limiting** are in place (global per-IP limit +
       stricter auth limits); monitoring/support remain._
