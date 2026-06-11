@@ -3,6 +3,7 @@ import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import type { FastifyRequest } from 'fastify';
 import { IdParam, Timestamps, DateTime, NullableDateTime, errorResponses } from '../schemas/common.js';
+import { decideIrrigation } from '../domain/irrigation.js';
 
 const SensorMetricEnum = Type.Union([
   Type.Literal('air_temp'),
@@ -62,6 +63,47 @@ const ListReadingsQuery = Type.Object({
   limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 1000, default: 200 })),
 });
 
+const IrrigationConfigSchema = Type.Object({
+  enabled: Type.Boolean(),
+  thresholdPct: Type.Number(),
+  requestedRunMs: Type.Integer(),
+  maxRunMs: Type.Integer(),
+  minIntervalMs: Type.Integer(),
+  staleAfterMs: Type.Integer(),
+});
+const IrrigationConfigUpdate = Type.Partial(IrrigationConfigSchema);
+
+const IrrigationDecisionSchema = Type.Object({
+  irrigate: Type.Boolean(),
+  runMs: Type.Integer(),
+  reason: Type.String(),
+  soilMoisturePct: Type.Union([Type.Number(), Type.Null()]),
+});
+
+const IrrigationRunSchema = Type.Object({
+  id: Type.String(),
+  startedAt: DateTime,
+  endedAt: DateTime,
+  runMs: Type.Integer(),
+  reason: Type.String(),
+  soilMoisturePct: Type.Union([Type.Number(), Type.Null()]),
+});
+
+const IrrigationStatus = Type.Object({
+  config: IrrigationConfigSchema,
+  decision: IrrigationDecisionSchema,
+  recentRuns: Type.Array(IrrigationRunSchema),
+});
+
+const DEFAULT_CONFIG = {
+  enabled: false,
+  thresholdPct: 30,
+  requestedRunMs: 120000,
+  maxRunMs: 300000,
+  minIntervalMs: 21600000,
+  staleAfterMs: 7200000,
+};
+
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -73,6 +115,25 @@ function safeEqualHex(a: string, b: string): boolean {
   const ba = Buffer.from(a, 'hex');
   const bb = Buffer.from(b, 'hex');
   return ba.length === bb.length && timingSafeEqual(ba, bb);
+}
+
+interface ConfigShape {
+  enabled: boolean;
+  thresholdPct: number;
+  requestedRunMs: number;
+  maxRunMs: number;
+  minIntervalMs: number;
+  staleAfterMs: number;
+}
+function stripConfig(c: ConfigShape): ConfigShape {
+  return {
+    enabled: c.enabled,
+    thresholdPct: c.thresholdPct,
+    requestedRunMs: c.requestedRunMs,
+    maxRunMs: c.maxRunMs,
+    minIntervalMs: c.minIntervalMs,
+    staleAfterMs: c.staleAfterMs,
+  };
 }
 
 export const deviceRoutes: FastifyPluginAsyncTypebox = async (app) => {
@@ -263,6 +324,129 @@ export const deviceRoutes: FastifyPluginAsyncTypebox = async (app) => {
         orderBy: { recordedAt: 'desc' },
         take: request.query.limit ?? 200,
       });
+    },
+  );
+
+  // --- Irrigation control (user-authenticated) ----------------------------
+
+  const ownsDevice = (id: string, userId: string) =>
+    app.prisma.device.findFirst({ where: { id, ownerId: userId } });
+
+  /** Evaluate the fail-safe rules for a device against its latest reading. */
+  async function evaluateIrrigation(deviceId: string) {
+    const [config, latest, lastRun] = await Promise.all([
+      app.prisma.irrigationConfig.findUnique({ where: { deviceId } }),
+      app.prisma.sensorReading.findFirst({
+        where: { deviceId, metric: 'soil_moisture' },
+        orderBy: { recordedAt: 'desc' },
+      }),
+      app.prisma.irrigationRun.findFirst({ where: { deviceId }, orderBy: { endedAt: 'desc' } }),
+    ]);
+    const cfg = config ?? DEFAULT_CONFIG;
+    const soilMoisturePct = latest?.value ?? null;
+
+    if (!cfg.enabled) {
+      return {
+        cfg,
+        decision: { irrigate: false, runMs: 0, reason: 'Automatic irrigation is disabled.', soilMoisturePct },
+      };
+    }
+
+    const now = Date.now();
+    const sensorStale = !latest || now - latest.recordedAt.getTime() > cfg.staleAfterMs;
+    const d = decideIrrigation({
+      soilMoisturePct,
+      thresholdPct: cfg.thresholdPct,
+      sensorStale,
+      lastRunEndedAt: lastRun?.endedAt.getTime() ?? null,
+      minIntervalMs: cfg.minIntervalMs,
+      maxRunMs: cfg.maxRunMs,
+      requestedRunMs: cfg.requestedRunMs,
+      now,
+    });
+    return { cfg, decision: { ...d, soilMoisturePct } };
+  }
+
+  app.get(
+    '/:id/irrigation',
+    {
+      onRequest: [app.authenticate],
+      schema: {
+        tags: ['devices'],
+        summary: 'Irrigation config, the current fail-safe decision, and recent runs',
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        response: { 200: IrrigationStatus, ...errorResponses },
+      },
+    },
+    async (request, reply) => {
+      const device = await ownsDevice(request.params.id, request.user.sub);
+      if (!device) return reply.notFound('Device not found.');
+      const { cfg, decision } = await evaluateIrrigation(device.id);
+      const recentRuns = await app.prisma.irrigationRun.findMany({
+        where: { deviceId: device.id },
+        orderBy: { startedAt: 'desc' },
+        take: 10,
+      });
+      return { config: stripConfig(cfg), decision, recentRuns };
+    },
+  );
+
+  app.put(
+    '/:id/irrigation',
+    {
+      onRequest: [app.authenticate],
+      schema: {
+        tags: ['devices'],
+        summary: 'Update a device’s irrigation policy',
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        body: IrrigationConfigUpdate,
+        response: { 200: IrrigationConfigSchema, ...errorResponses },
+      },
+    },
+    async (request, reply) => {
+      const device = await ownsDevice(request.params.id, request.user.sub);
+      if (!device) return reply.notFound('Device not found.');
+      const saved = await app.prisma.irrigationConfig.upsert({
+        where: { deviceId: device.id },
+        update: request.body,
+        create: { deviceId: device.id, ...DEFAULT_CONFIG, ...request.body },
+      });
+      return stripConfig(saved);
+    },
+  );
+
+  app.post(
+    '/:id/irrigate',
+    {
+      onRequest: [app.authenticate],
+      schema: {
+        tags: ['devices'],
+        summary: 'Run the fail-safe rules now; logs a run if irrigation is warranted',
+        security: [{ bearerAuth: [] }],
+        params: IdParam,
+        response: { 200: IrrigationDecisionSchema, ...errorResponses },
+      },
+    },
+    async (request, reply) => {
+      const device = await ownsDevice(request.params.id, request.user.sub);
+      if (!device) return reply.notFound('Device not found.');
+      const { decision } = await evaluateIrrigation(device.id);
+      if (decision.irrigate) {
+        const now = new Date();
+        await app.prisma.irrigationRun.create({
+          data: {
+            deviceId: device.id,
+            startedAt: now,
+            endedAt: new Date(now.getTime() + decision.runMs),
+            runMs: decision.runMs,
+            reason: decision.reason,
+            soilMoisturePct: decision.soilMoisturePct,
+          },
+        });
+      }
+      return decision;
     },
   );
 

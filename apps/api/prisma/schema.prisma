@@ -471,6 +471,8 @@ model Device {
   owner   User   @relation(fields: [ownerId], references: [id])
 
   readings SensorReading[]
+  config   IrrigationConfig?
+  runs     IrrigationRun[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -497,4 +499,37 @@ model SensorReading {
 
   @@unique([deviceId, metric, recordedAt])
   @@index([deviceId, metric, recordedAt])
+}
+
+/// Per-device automatic-irrigation policy. All durations in milliseconds. The
+/// fail-safe rules in `domain/irrigation.ts` consume these.
+model IrrigationConfig {
+  id             String  @id @default(cuid())
+  deviceId       String  @unique
+  device         Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  enabled        Boolean @default(false)
+  thresholdPct   Float   @default(30)
+  requestedRunMs Int     @default(120000) // 2 min
+  maxRunMs       Int     @default(300000) // 5 min — hard cap
+  minIntervalMs  Int     @default(21600000) // 6 h — anti-flood
+  staleAfterMs   Int     @default(7200000) // 2 h — older readings are untrusted
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A logged irrigation run (or decision), so the anti-flood interval has a real
+/// `lastRunEndedAt` and runs are auditable.
+model IrrigationRun {
+  id              String   @id @default(cuid())
+  deviceId        String
+  device          Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  startedAt       DateTime @default(now())
+  endedAt         DateTime
+  runMs           Int
+  reason          String
+  soilMoisturePct Float?
+  createdAt       DateTime @default(now())
+
+  @@index([deviceId, startedAt])
 }

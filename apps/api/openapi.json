@@ -11074,6 +11074,398 @@
         }
       }
     },
+    "/api/devices/{id}/irrigation": {
+      "get": {
+        "summary": "Irrigation config, the current fail-safe decision, and recent runs",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "config",
+                    "decision",
+                    "recentRuns"
+                  ],
+                  "properties": {
+                    "config": {
+                      "type": "object",
+                      "required": [
+                        "enabled",
+                        "thresholdPct",
+                        "requestedRunMs",
+                        "maxRunMs",
+                        "minIntervalMs",
+                        "staleAfterMs"
+                      ],
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "thresholdPct": {
+                          "type": "number"
+                        },
+                        "requestedRunMs": {
+                          "type": "integer"
+                        },
+                        "maxRunMs": {
+                          "type": "integer"
+                        },
+                        "minIntervalMs": {
+                          "type": "integer"
+                        },
+                        "staleAfterMs": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "decision": {
+                      "type": "object",
+                      "required": [
+                        "irrigate",
+                        "runMs",
+                        "reason",
+                        "soilMoisturePct"
+                      ],
+                      "properties": {
+                        "irrigate": {
+                          "type": "boolean"
+                        },
+                        "runMs": {
+                          "type": "integer"
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "soilMoisturePct": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "recentRuns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "startedAt",
+                          "endedAt",
+                          "runMs",
+                          "reason",
+                          "soilMoisturePct"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "endedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "runMs": {
+                            "type": "integer"
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "soilMoisturePct": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a device’s irrigation policy",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "thresholdPct": {
+                    "type": "number"
+                  },
+                  "requestedRunMs": {
+                    "type": "integer"
+                  },
+                  "maxRunMs": {
+                    "type": "integer"
+                  },
+                  "minIntervalMs": {
+                    "type": "integer"
+                  },
+                  "staleAfterMs": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enabled",
+                    "thresholdPct",
+                    "requestedRunMs",
+                    "maxRunMs",
+                    "minIntervalMs",
+                    "staleAfterMs"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "thresholdPct": {
+                      "type": "number"
+                    },
+                    "requestedRunMs": {
+                      "type": "integer"
+                    },
+                    "maxRunMs": {
+                      "type": "integer"
+                    },
+                    "minIntervalMs": {
+                      "type": "integer"
+                    },
+                    "staleAfterMs": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}/irrigate": {
+      "post": {
+        "summary": "Run the fail-safe rules now; logs a run if irrigation is warranted",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "irrigate",
+                    "runMs",
+                    "reason",
+                    "soilMoisturePct"
+                  ],
+                  "properties": {
+                    "irrigate": {
+                      "type": "boolean"
+                    },
+                    "runMs": {
+                      "type": "integer"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "soilMoisturePct": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/devices/ingest": {
       "post": {
         "summary": "Ingest a batch of buffered sensor readings (device token auth)",
