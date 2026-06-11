@@ -185,23 +185,38 @@ Builds on the location data from Phase 1.
       _Deferred follow-up; alerts surface in-app on the Home dashboard for now._
 
 ### Phase 7 — Hardware Integration (IoT Controller & Data Gathering)
-The ESP32 monitoring and irrigation layer.
+The ESP32 monitoring and irrigation layer. _The app side (API + dashboards) is
+built; the firmware itself is out of scope but consumes the documented ingest
+contract below._
 - [ ] ESP32 firmware to read sensors and report to the app via the shared API.
-- [ ] Sensor data collection and storage:
-  - [ ] Air temperature
-  - [ ] Humidity
-  - [ ] Soil moisture
-  - [ ] Water level
-  - [ ] Light
-- [ ] **Buffer readings on-device** and sync when connectivity returns.
-- [ ] Dashboards and historical charts for sensor data.
-- [ ] Automatic irrigation based on pre-set criteria (e.g. soil moisture
+      _Firmware out of scope; the contract it targets (`POST /api/devices/ingest`,
+      device-token auth) is built and documented._
+- [x] Sensor data collection and storage:
+  - [x] Air temperature
+  - [x] Humidity
+  - [x] Soil moisture
+  - [x] Water level
+  - [x] Light
+        _`SensorReading` (metric enum) + `POST /api/devices/ingest`._
+- [x] **Buffer readings on-device** and sync when connectivity returns.
+      _Ingest is a batch upsert that's idempotent on `(device, metric, recordedAt)`,
+      so re-sending a buffer never duplicates._
+- [x] Dashboards and historical charts for sensor data.
+      _The "Monitor" panel shows per-metric latest value + a sparkline history._
+- [x] Automatic irrigation based on pre-set criteria (e.g. soil moisture
       thresholds), tied to specific beds.
-- [ ] **Fail-safe irrigation** — hard limits/timeouts so a stuck valve or bad
+      _`IrrigationConfig` per device; `POST /api/devices/:id/irrigate`._
+- [x] **Fail-safe irrigation** — hard limits/timeouts so a stuck valve or bad
       reading can't flood a bed; alert on anomalies.
-- [ ] **Device health monitoring** — battery, last-seen, calibration tracking.
-- [ ] **Secure device auth** — per-device credentials/tokens, not shared keys.
+      _`domain/irrigation.ts` (9 tests): hard run cap, anti-flood interval, and
+      OFF on missing/stale/out-of-range readings._
+- [x] **Device health monitoring** — battery, last-seen, calibration tracking.
+      _Battery/firmware/last-seen updated on every ingest; shown in Monitor._
+- [x] **Secure device auth** — per-device credentials/tokens, not shared keys.
+      _One-time `<deviceId>.<secret>` token; only its SHA-256 hash is stored;
+      constant-time compare; rotatable._
 - [ ] Tie sensor/irrigation data back into planting records and recommendations.
+      _Future follow-up._
 
 ### Phase 8 — Public / Commercial (SaaS) — *Future, optional*
 A path to opening Gardien up beyond personal use.
@@ -234,9 +249,12 @@ garden & bed management; Phase 4 garden planning — a calendar-centric planner
 with plan-time conflict detection; Phase 5 history & recommendations — per-bed
 plant recommendations from rotation history, amendment logging, and JSON export;
 Phase 6 weather-driven alerts — a localized forecast with frost warnings and a
-pest/disease watch on the dashboard. The app shell is a left-sidebar layout
-(Home, Garden Manager, Garden Planner, Plant Directory, Journal, Settings). See
-[DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
+pest/disease watch; Phase 7 hardware/IoT — the device + sensor API (per-device
+token auth, idempotent ingestion), fail-safe irrigation control, and a "Monitor"
+panel with sensor charts and device health. The app shell is a left-sidebar
+layout (Home, Garden Manager, Garden Planner, Plant Directory, Journal, Monitor,
+Settings). See [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
 
-Remaining: Phase 5 data import and Phase 6 push/email notifications (deferred
-follow-ups), then Phase 7 (hardware/IoT) and Phase 8 (multi-tenant SaaS).
+Remaining: Phase 8 (multi-tenant SaaS), plus deferred follow-ups — Phase 5 data
+import, Phase 6 push/email notifications, ESP32 firmware, and tying sensor data
+back into recommendations.
