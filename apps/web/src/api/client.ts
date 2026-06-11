@@ -349,6 +349,87 @@ export interface AmendmentInput {
   notes?: string;
 }
 
+export interface ForecastDay {
+  date: string;
+  tempMinC: number | null;
+  tempMaxC: number | null;
+  precipMm: number | null;
+}
+
+export interface FrostWarning {
+  date: string;
+  tempMinC: number;
+  severity: 'frost' | 'light-frost';
+}
+
+export interface PestWatch {
+  plantName: string;
+  name: string;
+  kind: 'pest' | 'disease';
+  management: string | null;
+}
+
+export interface WeatherAlerts {
+  located: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  source: 'api' | 'cache' | 'stale-cache' | null;
+  forecast: ForecastDay[];
+  frostWarnings: FrostWarning[];
+  pestWatch: PestWatch[];
+}
+
+export type SensorMetric = 'air_temp' | 'humidity' | 'soil_moisture' | 'water_level' | 'light';
+
+export interface Device {
+  id: string;
+  name: string;
+  bedId: string | null;
+  batteryPct: number | null;
+  firmwareVersion: string | null;
+  lastSeenAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+export interface DeviceWithToken extends Device {
+  token: string;
+}
+export interface SensorReading {
+  id: string;
+  metric: SensorMetric;
+  value: number;
+  unit: string;
+  recordedAt: string;
+}
+export interface IrrigationConfig {
+  enabled: boolean;
+  thresholdPct: number;
+  requestedRunMs: number;
+  maxRunMs: number;
+  minIntervalMs: number;
+  staleAfterMs: number;
+}
+export interface IrrigationDecision {
+  irrigate: boolean;
+  runMs: number;
+  reason: string;
+  soilMoisturePct: number | null;
+}
+export interface IrrigationRun {
+  id: string;
+  startedAt: string;
+  endedAt: string;
+  runMs: number;
+  reason: string;
+  soilMoisturePct: number | null;
+}
+export interface IrrigationStatus {
+  config: IrrigationConfig;
+  decision: IrrigationDecision;
+  recentRuns: IrrigationRun[];
+}
+
 export const api = {
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await request<AuthResponse>('/api/auth/login', {
@@ -452,6 +533,42 @@ export const api = {
   },
   exportData() {
     return request<Record<string, unknown>>('/api/export');
+  },
+  getWeather() {
+    return request<WeatherAlerts>('/api/weather');
+  },
+  listDevices() {
+    return request<Device[]>('/api/devices');
+  },
+  createDevice(input: { name: string; bedId?: string }) {
+    return request<DeviceWithToken>('/api/devices', { method: 'POST', body: JSON.stringify(input) });
+  },
+  updateDevice(id: string, input: { name?: string; bedId?: string | null; firmwareVersion?: string }) {
+    return request<Device>(`/api/devices/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+  },
+  archiveDevice(id: string) {
+    return request<Device>(`/api/devices/${id}`, { method: 'DELETE' });
+  },
+  rotateDeviceToken(id: string) {
+    return request<DeviceWithToken>(`/api/devices/${id}/rotate-token`, { method: 'POST' });
+  },
+  getDeviceReadings(id: string, metric?: SensorMetric, limit = 100) {
+    const qs = new URLSearchParams();
+    if (metric) qs.set('metric', metric);
+    qs.set('limit', String(limit));
+    return request<SensorReading[]>(`/api/devices/${id}/readings?${qs.toString()}`);
+  },
+  getIrrigation(id: string) {
+    return request<IrrigationStatus>(`/api/devices/${id}/irrigation`);
+  },
+  updateIrrigation(id: string, input: Partial<IrrigationConfig>) {
+    return request<IrrigationConfig>(`/api/devices/${id}/irrigation`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+  irrigateNow(id: string) {
+    return request<IrrigationDecision>(`/api/devices/${id}/irrigate`, { method: 'POST' });
   },
   getZone() {
     return request<AccountLocation>('/api/zone');
