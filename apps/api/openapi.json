@@ -11,6 +11,11 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
+      },
+      "deviceAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Per-device token: <deviceId>.<secret>"
       }
     },
     "schemas": {
@@ -9960,6 +9965,1242 @@
           }
         }
       }
+    },
+    "/api/devices/": {
+      "get": {
+        "summary": "List the account’s devices",
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "bedId",
+                      "batteryPct",
+                      "firmwareVersion",
+                      "lastSeenAt",
+                      "createdAt",
+                      "updatedAt",
+                      "deletedAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "bedId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "batteryPct": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "firmwareVersion": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lastSeenAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "deletedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a device (returns a one-time token)",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "type": "string"
+                  },
+                  "bedId": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "bedId",
+                        "batteryPct",
+                        "firmwareVersion",
+                        "lastSeenAt",
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "bedId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "batteryPct": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "firmwareVersion": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "lastSeenAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "deletedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "token"
+                      ],
+                      "properties": {
+                        "token": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}": {
+      "get": {
+        "summary": "Get a device",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "bedId",
+                    "batteryPct",
+                    "firmwareVersion",
+                    "lastSeenAt",
+                    "createdAt",
+                    "updatedAt",
+                    "deletedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "bedId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "batteryPct": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "firmwareVersion": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastSeenAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "deletedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a device",
+        "tags": [
+          "devices"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "type": "string"
+                  },
+                  "bedId": {
+                    "anyOf": [
+                      {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "firmwareVersion": {
+                    "maxLength": 40,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "bedId",
+                    "batteryPct",
+                    "firmwareVersion",
+                    "lastSeenAt",
+                    "createdAt",
+                    "updatedAt",
+                    "deletedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "bedId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "batteryPct": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "firmwareVersion": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastSeenAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "deletedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Archive (soft-delete) a device",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "bedId",
+                    "batteryPct",
+                    "firmwareVersion",
+                    "lastSeenAt",
+                    "createdAt",
+                    "updatedAt",
+                    "deletedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "bedId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "batteryPct": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "firmwareVersion": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lastSeenAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "deletedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}/rotate-token": {
+      "post": {
+        "summary": "Rotate a device’s token (returns the new one-time token)",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "bedId",
+                        "batteryPct",
+                        "firmwareVersion",
+                        "lastSeenAt",
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "bedId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "batteryPct": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "firmwareVersion": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "lastSeenAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "deletedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "token"
+                      ],
+                      "properties": {
+                        "token": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}/readings": {
+      "get": {
+        "summary": "List a device’s sensor readings (newest first)",
+        "tags": [
+          "devices"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "air_temp"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "humidity"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "soil_moisture"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "water_level"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "light"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "metric",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "metric",
+                      "value",
+                      "unit",
+                      "recordedAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "metric": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "air_temp"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "humidity"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "soil_moisture"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "water_level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "light"
+                            ]
+                          }
+                        ]
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "recordedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/ingest": {
+      "post": {
+        "summary": "Ingest a batch of buffered sensor readings (device token auth)",
+        "tags": [
+          "devices"
+        ],
+        "description": "Authenticated by the per-device token (Bearer <deviceId>.<secret>). Re-sending buffered readings is idempotent via the (device, metric, recordedAt) key.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "readings"
+                ],
+                "properties": {
+                  "batteryPct": {
+                    "minimum": 0,
+                    "maximum": 100,
+                    "type": "number"
+                  },
+                  "firmwareVersion": {
+                    "maxLength": 40,
+                    "type": "string"
+                  },
+                  "readings": {
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "metric",
+                        "value",
+                        "unit",
+                        "recordedAt"
+                      ],
+                      "properties": {
+                        "metric": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "air_temp"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "humidity"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "soil_moisture"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "water_level"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "light"
+                              ]
+                            }
+                          ]
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "maxLength": 16,
+                          "type": "string"
+                        },
+                        "recordedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "deviceAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "accepted"
+                  ],
+                  "properties": {
+                    "accepted": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -10012,6 +11253,10 @@
     {
       "name": "weather",
       "description": "Weather-driven alerts"
+    },
+    {
+      "name": "devices",
+      "description": "IoT devices & sensor readings"
     }
   ]
 }

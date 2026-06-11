@@ -26,6 +26,7 @@ import { plantingRoutes } from './routes/plantings.js';
 import { amendmentRoutes } from './routes/amendments.js';
 import { exportRoutes } from './routes/export.js';
 import { weatherRoutes } from './routes/weather.js';
+import { deviceRoutes } from './routes/devices.js';
 
 export interface BuildOptions {
   /** Skip the Prisma plugin (e.g. pure-logic tests that never touch the DB). */
@@ -60,6 +61,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
       components: {
         securitySchemes: {
           bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+          deviceAuth: { type: 'http', scheme: 'bearer', description: 'Per-device token: <deviceId>.<secret>' },
         },
       },
       tags: [
@@ -74,6 +76,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
         { name: 'amendments', description: 'Soil amendments' },
         { name: 'data', description: 'Data export / import' },
         { name: 'weather', description: 'Weather-driven alerts' },
+        { name: 'devices', description: 'IoT devices & sensor readings' },
       ],
     },
   });
@@ -96,6 +99,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
   await app.register(amendmentRoutes, { prefix: '/api/amendments' });
   await app.register(exportRoutes, { prefix: '/api/export' });
   await app.register(weatherRoutes, { prefix: '/api/weather' });
+  await app.register(deviceRoutes, { prefix: '/api/devices' });
 
   return app;
 }
