@@ -164,9 +164,10 @@ The knowledge base that powers planning.
 - [x] Surface warnings (e.g. planting the same family in the same bed too soon).
       _Rotation, companion, and overcrowding warnings appear in the planner's
       conflict panel at plan time._
-- [ ] **Data export/import** (CSV/JSON) — also eases the eventual SaaS migration.
-      _Export (JSON) shipped — `GET /api/export` + a Settings download. Import is
-      a focused follow-up._
+- [x] **Data export/import** (CSV/JSON) — also eases the eventual SaaS migration.
+      _JSON export (`GET /api/export`) and import (`POST /api/import`, additive
+      with ID remapping + plant-slug resolution) both shipped, with download/upload
+      in Settings. CSV is a later add._
 - [x] **Tests** covering the rotation/recommendation logic.
       _`recommend.test.ts` joins the rotation tests — 58 in total._
 

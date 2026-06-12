@@ -26,6 +26,7 @@ import { seasonRoutes } from './routes/seasons.js';
 import { plantingRoutes } from './routes/plantings.js';
 import { amendmentRoutes } from './routes/amendments.js';
 import { exportRoutes } from './routes/export.js';
+import { importRoutes } from './routes/importData.js';
 import { weatherRoutes } from './routes/weather.js';
 import { deviceRoutes } from './routes/devices.js';
 
@@ -103,6 +104,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
   await app.register(plantingRoutes, { prefix: '/api/plantings' });
   await app.register(amendmentRoutes, { prefix: '/api/amendments' });
   await app.register(exportRoutes, { prefix: '/api/export' });
+  await app.register(importRoutes, { prefix: '/api/import' });
   await app.register(weatherRoutes, { prefix: '/api/weather' });
   await app.register(deviceRoutes, { prefix: '/api/devices' });
 

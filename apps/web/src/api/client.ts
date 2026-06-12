@@ -542,6 +542,16 @@ export const api = {
   exportData() {
     return request<Record<string, unknown>>('/api/export');
   },
+  importData(data: unknown) {
+    return request<{
+      gardens: number;
+      beds: number;
+      seasons: number;
+      plantings: number;
+      amendments: number;
+      skippedPlantings: number;
+    }>('/api/import', { method: 'POST', body: JSON.stringify(data) });
+  },
   getWeather() {
     return request<WeatherAlerts>('/api/weather');
   },

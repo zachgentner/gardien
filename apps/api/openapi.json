@@ -9764,6 +9764,108 @@
         }
       }
     },
+    "/api/import/": {
+      "post": {
+        "summary": "Import a JSON export into the current account (additive)",
+        "tags": [
+          "data"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "required": [
+                  "version"
+                ],
+                "properties": {
+                  "version": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "gardens",
+                    "beds",
+                    "seasons",
+                    "plantings",
+                    "amendments",
+                    "skippedPlantings"
+                  ],
+                  "properties": {
+                    "gardens": {
+                      "type": "integer"
+                    },
+                    "beds": {
+                      "type": "integer"
+                    },
+                    "seasons": {
+                      "type": "integer"
+                    },
+                    "plantings": {
+                      "type": "integer"
+                    },
+                    "amendments": {
+                      "type": "integer"
+                    },
+                    "skippedPlantings": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard error envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/weather/": {
       "get": {
         "summary": "Localized forecast, frost warnings, and pest/disease watch",

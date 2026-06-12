@@ -764,6 +764,29 @@ details summary {
   font-size: 0.85rem;
 }
 
+/* File-input styled as a button (data import). */
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  position: relative;
+  overflow: hidden;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.6rem 1.1rem;
+  min-height: var(--tap);
+  border-radius: var(--radius-sm);
+}
+.file-button input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
 /* Location & hardiness zone ------------------------------------------------ */
 .zone-current {
   margin: 0 0 1rem;
