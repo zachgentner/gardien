@@ -35,6 +35,13 @@ enum UnitSystem {
   imperial
 }
 
+/// Subscription plan (Phase 8). Drives usage limits; billing integration is a
+/// later, provider-dependent step. Each user is their own isolated tenant.
+enum Plan {
+  free
+  pro
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -42,6 +49,7 @@ model User {
   displayName  String?
   role         UserRole   @default(owner)
   unitSystem   UnitSystem @default(imperial)
+  plan         Plan       @default(free)
 
   // Location & hardiness zone (Phase 1). The zone drives planting windows and
   // suitability. Derived from ZIP, but always overridable (microclimates).
@@ -57,6 +65,7 @@ model User {
   seasons   Season[]
   plants    Plant[]
   families  PlantFamily[]
+  devices   Device[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -297,6 +306,7 @@ model Bed {
 
   plantings  PlantingRecord[]
   amendments SoilAmendment[]
+  devices    Device[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -418,4 +428,116 @@ model ZoneLookupCache {
   temperatureRange String?
   source        String   @default("phzmapi")
   fetchedAt     DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Weather-driven alerts (Phase 6)
+// ---------------------------------------------------------------------------
+
+/// Cached localized forecasts keyed by rounded "lat,lon", so we avoid re-hitting
+/// the weather API and keep serving (stale) forecasts when it is unavailable
+/// (graceful degradation). `days` holds the parsed daily forecast as JSON.
+model WeatherCache {
+  key       String   @id
+  latitude  Float
+  longitude Float
+  days      Json
+  source    String   @default("open-meteo")
+  fetchedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Hardware / IoT (Phase 7)
+// ---------------------------------------------------------------------------
+
+enum SensorMetric {
+  air_temp
+  humidity
+  soil_moisture
+  water_level
+  light
+}
+
+/// An ESP32 (or similar) controller that reports sensor readings and may drive
+/// irrigation for a bed. Authenticates with a per-device token (only its hash
+/// is stored, like a password) so devices never share a key.
+model Device {
+  id        String  @id @default(cuid())
+  name      String
+  tokenHash String
+
+  // Optional bed this device monitors / irrigates.
+  bedId String?
+  bed   Bed?    @relation(fields: [bedId], references: [id])
+
+  // Health / calibration tracking.
+  batteryPct      Float?
+  firmwareVersion String?
+  lastSeenAt      DateTime?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  readings SensorReading[]
+  config   IrrigationConfig?
+  runs     IrrigationRun[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([ownerId])
+  @@index([bedId])
+  @@index([deletedAt])
+}
+
+/// A single sensor sample. `recordedAt` is when the device measured it (which
+/// may be earlier than receipt, since devices buffer offline and sync later);
+/// the unique key makes re-syncing buffered readings idempotent.
+model SensorReading {
+  id         String       @id @default(cuid())
+  metric     SensorMetric
+  value      Float
+  unit       String
+  recordedAt DateTime
+  createdAt  DateTime     @default(now())
+
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, metric, recordedAt])
+  @@index([deviceId, metric, recordedAt])
+}
+
+/// Per-device automatic-irrigation policy. All durations in milliseconds. The
+/// fail-safe rules in `domain/irrigation.ts` consume these.
+model IrrigationConfig {
+  id             String  @id @default(cuid())
+  deviceId       String  @unique
+  device         Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  enabled        Boolean @default(false)
+  thresholdPct   Float   @default(30)
+  requestedRunMs Int     @default(120000) // 2 min
+  maxRunMs       Int     @default(300000) // 5 min — hard cap
+  minIntervalMs  Int     @default(21600000) // 6 h — anti-flood
+  staleAfterMs   Int     @default(7200000) // 2 h — older readings are untrusted
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A logged irrigation run (or decision), so the anti-flood interval has a real
+/// `lastRunEndedAt` and runs are auditable.
+model IrrigationRun {
+  id              String   @id @default(cuid())
+  deviceId        String
+  device          Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  startedAt       DateTime @default(now())
+  endedAt         DateTime
+  runMs           Int
+  reason          String
+  soilMoisturePct Float?
+  createdAt       DateTime @default(now())
+
+  @@index([deviceId, startedAt])
 }

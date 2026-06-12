@@ -21,6 +21,7 @@ export function Settings({ user }: { user: AuthUser }) {
           <Field label="Email" value={user.email} />
           <Field label="Role" value={titleCase(user.role)} />
           <Field label="Units" value={titleCase(user.unitSystem)} />
+          <Field label="Plan" value={titleCase(user.plan)} />
         </dl>
         <p className="muted settings-note">
           Measurement units are set per account and applied across beds and the plant
@@ -36,14 +37,16 @@ export function Settings({ user }: { user: AuthUser }) {
   );
 }
 
-/** Export everything in the account as JSON — "own your data". */
+/** Export / import everything in the account as JSON — "own your data". */
 function DataCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
 
   const exportData = async () => {
     setBusy(true);
     setError(null);
+    setStatus(null);
     try {
       const data = await api.exportData();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -62,22 +65,63 @@ function DataCard() {
     }
   };
 
+  const importData = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    if (!window.confirm('Import this file? It adds its gardens, beds, and history to your account (nothing is overwritten).')) return;
+    setBusy(true);
+    setError(null);
+    setStatus(null);
+    try {
+      const parsed = JSON.parse(await file.text());
+      const r = await api.importData(parsed);
+      setStatus(
+        `Imported ${r.gardens} gardens, ${r.beds} beds, ${r.seasons} seasons, ${r.plantings} plantings, ${r.amendments} amendments` +
+          (r.skippedPlantings ? ` (${r.skippedPlantings} plantings skipped — unknown plant).` : '.'),
+      );
+    } catch (err) {
+      setError(
+        err instanceof ApiRequestError
+          ? err.message
+          : err instanceof SyntaxError
+            ? 'That file is not valid JSON.'
+            : 'Import failed.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section aria-labelledby="data-heading" className="card">
       <h3 id="data-heading">Your data</h3>
       <p className="muted">
         Download everything in your account — gardens, beds, seasons, plantings, and amendments —
-        as a JSON file. Own your data; nothing is locked in.
+        as a JSON file, or import a previous export. Own your data; nothing is locked in.
       </p>
       {error && (
         <p className="form__error" role="alert">
           {error}
         </p>
       )}
-      <button type="button" onClick={exportData} disabled={busy}>
-        {busy ? 'Exporting…' : 'Export data (JSON)'}
-      </button>
-      <p className="muted settings-note">Importing a previous export will arrive in a follow-up.</p>
+      {status && (
+        <p className="form__status" role="status">
+          {status}
+        </p>
+      )}
+      <div className="inline">
+        <button type="button" onClick={exportData} disabled={busy}>
+          {busy ? 'Working…' : 'Export data (JSON)'}
+        </button>
+        <label className="button--ghost file-button">
+          Import JSON
+          <input type="file" accept="application/json,.json" onChange={importData} disabled={busy} />
+        </label>
+      </div>
+      <p className="muted settings-note">
+        Import is additive and never overwrites; plantings referencing unknown plants are skipped.
+      </p>
     </section>
   );
 }

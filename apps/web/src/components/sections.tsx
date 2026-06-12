@@ -3,7 +3,14 @@
  * lives in the app shell (App.tsx) and the nav chrome in Sidebar.tsx, so this
  * stays a plain data/icon module (no exported components).
  */
-export type ViewId = 'home' | 'garden' | 'planner' | 'directory' | 'journal' | 'settings';
+export type ViewId =
+  | 'home'
+  | 'garden'
+  | 'planner'
+  | 'directory'
+  | 'journal'
+  | 'monitor'
+  | 'settings';
 
 export interface SectionMeta {
   id: ViewId;
@@ -18,6 +25,7 @@ export const SECTIONS: SectionMeta[] = [
   { id: 'planner', label: 'Garden Planner', eyebrow: 'Plan the season', icon: iconPlanner },
   { id: 'directory', label: 'Plant Directory', eyebrow: 'Knowledge base', icon: iconLeaf },
   { id: 'journal', label: 'Journal', eyebrow: 'Activity & care log', icon: iconLog },
+  { id: 'monitor', label: 'Monitor', eyebrow: 'Sensors & irrigation', icon: iconMonitor },
   { id: 'settings', label: 'Settings', eyebrow: 'Account & location', icon: iconGear },
 ];
 
@@ -61,6 +69,16 @@ function iconLog() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
       <path d="M6 3h9l4 4v14H6z" strokeLinejoin="round" />
       <path d="M14 3v5h5M9 13h6M9 17h6M9 9h2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function iconMonitor() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M3 13a9 9 0 0 1 18 0" strokeLinecap="round" />
+      <path d="M12 13l4-2.5" strokeLinecap="round" />
+      <circle cx="12" cy="13" r="1.2" fill="currentColor" stroke="none" />
+      <path d="M3 13v4h18v-4M7 21h10" strokeLinecap="round" />
     </svg>
   );
 }

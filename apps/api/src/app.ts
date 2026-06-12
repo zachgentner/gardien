@@ -6,6 +6,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
@@ -25,6 +26,9 @@ import { seasonRoutes } from './routes/seasons.js';
 import { plantingRoutes } from './routes/plantings.js';
 import { amendmentRoutes } from './routes/amendments.js';
 import { exportRoutes } from './routes/export.js';
+import { importRoutes } from './routes/importData.js';
+import { weatherRoutes } from './routes/weather.js';
+import { deviceRoutes } from './routes/devices.js';
 
 export interface BuildOptions {
   /** Skip the Prisma plugin (e.g. pure-logic tests that never touch the DB). */
@@ -43,6 +47,10 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
   await app.register(sensible);
   await app.register(cors, { origin: config.corsOrigin, credentials: true });
 
+  // Operational hardening (Phase 8): a global request rate limit, with tighter
+  // per-route limits on auth (see routes/auth.ts) to blunt brute-force.
+  await app.register(rateLimit, { max: config.rateLimitMax, timeWindow: '1 minute' });
+
   // Shared schemas referenced by route response definitions.
   app.addSchema(ErrorSchema);
 
@@ -59,6 +67,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
       components: {
         securitySchemes: {
           bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+          deviceAuth: { type: 'http', scheme: 'bearer', description: 'Per-device token: <deviceId>.<secret>' },
         },
       },
       tags: [
@@ -72,6 +81,8 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
         { name: 'plantings', description: 'Planting records' },
         { name: 'amendments', description: 'Soil amendments' },
         { name: 'data', description: 'Data export / import' },
+        { name: 'weather', description: 'Weather-driven alerts' },
+        { name: 'devices', description: 'IoT devices & sensor readings' },
       ],
     },
   });
@@ -93,6 +104,9 @@ export async function buildApp(options: BuildOptions = {}): Promise<FastifyInsta
   await app.register(plantingRoutes, { prefix: '/api/plantings' });
   await app.register(amendmentRoutes, { prefix: '/api/amendments' });
   await app.register(exportRoutes, { prefix: '/api/export' });
+  await app.register(importRoutes, { prefix: '/api/import' });
+  await app.register(weatherRoutes, { prefix: '/api/weather' });
+  await app.register(deviceRoutes, { prefix: '/api/devices' });
 
   return app;
 }

@@ -26,6 +26,14 @@ const BED_TYPES: { value: BedType; label: string }[] = [
   { value: 'greenhouse', label: 'Greenhouse' },
 ];
 
+const SENSOR_LABELS: Record<string, string> = {
+  air_temp: 'Air temp',
+  humidity: 'Humidity',
+  soil_moisture: 'Soil moisture',
+  water_level: 'Water level',
+  light: 'Light',
+};
+
 const STATUS_LABELS: Record<string, string> = {
   planned: 'Planned',
   planted: 'Planted',
@@ -648,6 +656,21 @@ function BedDetailPanel({
         <p>Loading bed…</p>
       ) : detail ? (
         <>
+          {detail.sensors.length > 0 && (
+            <section>
+              <h5>Current conditions</h5>
+              <dl className="plant-card__attrs">
+                {detail.sensors.map((s) => (
+                  <Attr
+                    key={s.metric}
+                    label={SENSOR_LABELS[s.metric] ?? s.metric}
+                    value={`${s.value} ${s.unit}`}
+                  />
+                ))}
+              </dl>
+              <p className="muted settings-note">Live readings from this bed&apos;s device.</p>
+            </section>
+          )}
           <PlantingGroup title="Currently growing" items={detail.current} seasonName={seasonName} />
           <PlantingGroup
             title="Planting history"

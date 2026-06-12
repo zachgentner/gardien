@@ -18,6 +18,7 @@ const UserPublic = Type.Object({
   displayName: Type.Union([Type.String(), Type.Null()]),
   role: Type.String(),
   unitSystem: Type.String(),
+  plan: Type.String(),
 });
 
 const AuthResponse = Type.Object({
@@ -28,9 +29,13 @@ const AuthResponse = Type.Object({
 const BCRYPT_ROUNDS = 10;
 
 export const authRoutes: FastifyPluginAsyncTypebox = async (app) => {
+  // Tighter limits on credential endpoints to blunt brute-force / abuse.
+  const authRateLimit = { rateLimit: { max: 10, timeWindow: '1 minute' } };
+
   app.post(
     '/register',
     {
+      config: authRateLimit,
       schema: {
         tags: ['auth'],
         summary: 'Register an account',
@@ -68,6 +73,7 @@ export const authRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.post(
     '/login',
     {
+      config: authRateLimit,
       schema: {
         tags: ['auth'],
         summary: 'Log in and receive a JWT',
@@ -113,6 +119,7 @@ function toPublic(user: {
   displayName: string | null;
   role: string;
   unitSystem: string;
+  plan: string;
 }) {
   return {
     id: user.id,
@@ -120,5 +127,6 @@ function toPublic(user: {
     displayName: user.displayName,
     role: user.role,
     unitSystem: user.unitSystem,
+    plan: user.plan,
   };
 }

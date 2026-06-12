@@ -28,6 +28,8 @@ export const config = {
     isProd ? undefined : 'dev-insecure-secret-change-me',
   ),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+  // Global request rate limit per IP per minute (operational hardening).
+  rateLimitMax: Number(process.env.RATE_LIMIT_MAX ?? 300),
   corsOrigin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
     .split(',')
     .map((s) => s.trim())

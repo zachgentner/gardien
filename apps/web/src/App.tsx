@@ -11,6 +11,7 @@ import { GardenManager } from './components/GardenManager';
 import { GardenPlanner } from './components/GardenPlanner';
 import { PlantDirectory } from './components/PlantDirectory';
 import { ActivityLog } from './components/ActivityLog';
+import { Monitor } from './components/Monitor';
 import { Settings } from './components/Settings';
 
 const ROUTES = SECTIONS.map((s) => s.id);
@@ -91,6 +92,7 @@ function AppShell({
           {view === 'planner' && <GardenPlanner />}
           {view === 'directory' && <PlantDirectory />}
           {view === 'journal' && <ActivityLog />}
+          {view === 'monitor' && <Monitor />}
           {view === 'settings' && <Settings user={user} />}
         </main>
       </div>

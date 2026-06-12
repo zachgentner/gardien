@@ -8,6 +8,7 @@ export interface AuthUser {
   displayName: string | null;
   role: string;
   unitSystem: string;
+  plan: string;
 }
 
 export interface AuthResponse {

@@ -164,44 +164,77 @@ The knowledge base that powers planning.
 - [x] Surface warnings (e.g. planting the same family in the same bed too soon).
       _Rotation, companion, and overcrowding warnings appear in the planner's
       conflict panel at plan time._
-- [ ] **Data export/import** (CSV/JSON) — also eases the eventual SaaS migration.
-      _Export (JSON) shipped — `GET /api/export` + a Settings download. Import is
-      a focused follow-up._
+- [x] **Data export/import** (CSV/JSON) — also eases the eventual SaaS migration.
+      _JSON export (`GET /api/export`) and import (`POST /api/import`, additive
+      with ID remapping + plant-slug resolution) both shipped, with download/upload
+      in Settings. CSV is a later add._
 - [x] **Tests** covering the rotation/recommendation logic.
       _`recommend.test.ts` joins the rotation tests — 58 in total._
 
 ### Phase 6 — Weather-Driven Alerts
 Builds on the location data from Phase 1.
-- [ ] Pull localized weather forecasts (**cached, degrade gracefully**).
-- [ ] Frost warnings based on forecast and your plantings.
-- [ ] Location-based pest and disease alerts.
+- [x] Pull localized weather forecasts (**cached, degrade gracefully**).
+      _`GET /api/weather` via Open-Meteo (no API key); `WeatherCache` with a 3h
+      freshness window and stale-cache fallback when upstream is down._
+- [x] Frost warnings based on forecast and your plantings.
+      _`domain/frost.ts` classifies hard/light frost from daily minima; shown as
+      a dashboard banner with affected days highlighted._
+- [x] Location-based pest and disease alerts.
+      _A "Watch for" list built from the pests/diseases of what you're currently
+      growing._
 - [ ] Notification delivery with an **email fallback** where PWA push is limited.
+      _Deferred follow-up; alerts surface in-app on the Home dashboard for now._
 
 ### Phase 7 — Hardware Integration (IoT Controller & Data Gathering)
-The ESP32 monitoring and irrigation layer.
+The ESP32 monitoring and irrigation layer. _The app side (API + dashboards) is
+built; the firmware itself is out of scope but consumes the documented ingest
+contract below._
 - [ ] ESP32 firmware to read sensors and report to the app via the shared API.
-- [ ] Sensor data collection and storage:
-  - [ ] Air temperature
-  - [ ] Humidity
-  - [ ] Soil moisture
-  - [ ] Water level
-  - [ ] Light
-- [ ] **Buffer readings on-device** and sync when connectivity returns.
-- [ ] Dashboards and historical charts for sensor data.
-- [ ] Automatic irrigation based on pre-set criteria (e.g. soil moisture
+      _Firmware out of scope; the contract it targets (`POST /api/devices/ingest`,
+      device-token auth) is built and documented._
+- [x] Sensor data collection and storage:
+  - [x] Air temperature
+  - [x] Humidity
+  - [x] Soil moisture
+  - [x] Water level
+  - [x] Light
+        _`SensorReading` (metric enum) + `POST /api/devices/ingest`._
+- [x] **Buffer readings on-device** and sync when connectivity returns.
+      _Ingest is a batch upsert that's idempotent on `(device, metric, recordedAt)`,
+      so re-sending a buffer never duplicates._
+- [x] Dashboards and historical charts for sensor data.
+      _The "Monitor" panel shows per-metric latest value + a sparkline history._
+- [x] Automatic irrigation based on pre-set criteria (e.g. soil moisture
       thresholds), tied to specific beds.
-- [ ] **Fail-safe irrigation** — hard limits/timeouts so a stuck valve or bad
+      _`IrrigationConfig` per device; `POST /api/devices/:id/irrigate`._
+- [x] **Fail-safe irrigation** — hard limits/timeouts so a stuck valve or bad
       reading can't flood a bed; alert on anomalies.
-- [ ] **Device health monitoring** — battery, last-seen, calibration tracking.
-- [ ] **Secure device auth** — per-device credentials/tokens, not shared keys.
+      _`domain/irrigation.ts` (9 tests): hard run cap, anti-flood interval, and
+      OFF on missing/stale/out-of-range readings._
+- [x] **Device health monitoring** — battery, last-seen, calibration tracking.
+      _Battery/firmware/last-seen updated on every ingest; shown in Monitor._
+- [x] **Secure device auth** — per-device credentials/tokens, not shared keys.
+      _One-time `<deviceId>.<secret>` token; only its SHA-256 hash is stored;
+      constant-time compare; rotatable._
 - [ ] Tie sensor/irrigation data back into planting records and recommendations.
+      _Future follow-up._
 
 ### Phase 8 — Public / Commercial (SaaS) — *Future, optional*
 A path to opening Gardien up beyond personal use.
-- [ ] Multi-user tenancy with per-account data isolation.
-- [ ] Account onboarding, roles/permissions.
-- [ ] Billing, plans/tiers, and usage limits.
-- [ ] Operational concerns: monitoring, backups, rate limiting, support.
+- [~] Multi-user tenancy with per-account data isolation.
+      _Per-account isolation is already enforced — every query is scoped to the
+      owning user. An org/team tenancy model (vs. user-as-tenant) is a product
+      decision still open._
+- [~] Account onboarding, roles/permissions.
+      _Open registration + an `owner`/`member` role exist from Phase 0; richer
+      role enforcement is pending the tenancy decision._
+- [~] Billing, plans/tiers, and usage limits.
+      _Plans (`free`/`pro`) and **usage limits** are enforced (e.g. free caps
+      gardens/devices); the plan shows in Settings. Actual **billing/charging**
+      still needs a payment-provider decision._
+- [~] Operational concerns: monitoring, backups, rate limiting, support.
+      _Backups (Phase 0) and **rate limiting** are in place (global per-IP limit +
+      stricter auth limits); monitoring/support remain._
 
 ---
 
@@ -219,15 +252,20 @@ Sensor metrics the IoT layer will collect:
 
 ## Status
 
-**Phases 0–4 are in place.** Phase 0 laid a deployable single-user PWA skeleton
+**Phases 0–6 are in place.** Phase 0 laid a deployable single-user PWA skeleton
 (monorepo, documented API contract, PWA shell, full core data model, auth
 scaffolding, CI with tests, seed data, backups, accessibility baseline). Phase 1
 added location & USDA hardiness zone; Phase 2 the plant directory; Phase 3
 garden & bed management; Phase 4 garden planning — a calendar-centric planner
-that assigns plants to beds for a season and runs plan-time conflict detection
-(incompatible neighbors, rotation, overcrowding, zone suitability) with a
-12-month planting/harvest calendar. The app shell is a left-sidebar layout
-(Home, Garden Manager, Garden Planner, Plant Directory, Journal, Settings). See
-[DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
+with plan-time conflict detection; Phase 5 history & recommendations — per-bed
+plant recommendations from rotation history, amendment logging, and JSON export;
+Phase 6 weather-driven alerts — a localized forecast with frost warnings and a
+pest/disease watch; Phase 7 hardware/IoT — the device + sensor API (per-device
+token auth, idempotent ingestion), fail-safe irrigation control, and a "Monitor"
+panel with sensor charts and device health. The app shell is a left-sidebar
+layout (Home, Garden Manager, Garden Planner, Plant Directory, Journal, Monitor,
+Settings). See [DEVELOPMENT.md](./DEVELOPMENT.md) to run it.
 
-The next focus is Phase 5 (history & recommendations), still as a single-user PWA.
+Remaining: Phase 8 (multi-tenant SaaS), plus deferred follow-ups — Phase 5 data
+import, Phase 6 push/email notifications, ESP32 firmware, and tying sensor data
+back into recommendations.

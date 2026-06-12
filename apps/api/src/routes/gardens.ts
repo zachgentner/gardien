@@ -1,6 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { IdParam, ListQuery, Timestamps, errorResponses } from '../schemas/common.js';
+import { withinLimit, planLimit, type Plan } from '../domain/plan.js';
 
 const Garden = Type.Object({
   id: Type.String(),
@@ -59,6 +60,16 @@ export const gardenRoutes: FastifyPluginAsyncTypebox = async (app) => {
       },
     },
     async (request, reply) => {
+      const [user, count] = await Promise.all([
+        app.prisma.user.findUnique({ where: { id: request.user.sub }, select: { plan: true } }),
+        app.prisma.garden.count({ where: { ownerId: request.user.sub, deletedAt: null } }),
+      ]);
+      const plan = (user?.plan ?? 'free') as Plan;
+      if (!withinLimit(plan, 'gardens', count)) {
+        return reply.forbidden(
+          `Your plan allows up to ${planLimit(plan, 'gardens')} gardens. Upgrade to add more.`,
+        );
+      }
       const garden = await app.prisma.garden.create({
         data: { ...request.body, ownerId: request.user.sub },
       });
